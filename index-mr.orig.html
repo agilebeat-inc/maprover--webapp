@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Maprover Tiles classification example</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        const RAIL_S3_BUCKET_LAYER = 'https:///railmaprover.io.s3.amazonaws.com/{z}/{x}/{y}.png'
+        const RAIL_LAMBDA_CLASSIFY = 'https://api.maprover.io/infer'
+    </script> 
+    <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
+    <script src="https://unpkg.com/pouchdb@^7.0.0/dist/pouchdb.js"></script>
+    <script src="scripts/leaflet-side-by-side.js"></script>
+
+    <script src="scripts/L.TileLayer.Maprover-Playground.js"></script>
+    <script>
+        var map = L.map('map', {
+            minZoom: 0,
+            maxZoom: 19
+        }).setView([-41.2458, 174.78682], 17);
+        var layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            minZoom: 0,
+            attribution: 'Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                'Imagery © <a href="https://mapbox.com">Mapbox</a>',
+            id: 'examples.map-i875mjb7',
+            useCache: true,
+            crossOrigin: true,
+            classifyURLService: RAIL_LAMBDA_CLASSIFY
+
+        });
+        var railLayer = L.tileLayer(RAIL_S3_BUCKET_LAYER, {
+            maxZoom: 19,
+            minZoom: 0,
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                'Imagery © <a href="https://mapbox.com">Mapbox</a>',
+            id: 'examples.map-i875mjb7',
+            useCache: false,
+            crossOrigin: true
+        });
+
+        var railControl =  L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+                container.style.backgroundColor = 'white';
+                container.style.backgroundImage = "url(images/railroad-icon.png)";
+                container.style.backgroundSize = "45px 45px";
+                container.style.width = '45px';
+                container.style.height = '45px';
+
+                container.onclick = function(){
+                    //map.addLayer(L.rectangle([[-41.2458, 174.78682], [-41.25, 174.79]]))
+                    map.addLayer(railLayer.options.layerGroup)
+                    console.log('adding group');
+                }
+
+                return container;
+            }
+        });
+
+        var tweetControl =  L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+                container.style.backgroundColor = 'white';
+                container.style.backgroundImage = "url(images/tweet-icon.png)";
+                container.style.backgroundSize = "45px 45px";
+                container.style.width = '45px';
+                container.style.height = '45px';
+
+                container.onclick = function(){
+                    map.
+                    console.log('buttonClicked');
+                }
+
+                return container;
+            }
+        });
+
+        var filterTweetControl =  L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+                container.style.backgroundColor = 'white';
+                container.style.backgroundImage = "url(images/filter-icon.png)";
+                container.style.backgroundSize = "45px 45px";
+                container.style.width = '45px';
+                container.style.height = '45px';
+
+                container.onclick = function(){
+                    console.log('buttonClicked');
+                }
+
+                return container;
+            }
+        });
+
+        // 		var map = L.map('map').setView([63.41784,10.40359], 5);
+
+        map.addControl(new railControl());
+        map.addControl(new tweetControl());
+        map.addControl(new filterTweetControl());
+
+        layer.addTo(map);
+        railLayer.addTo(map);
+        L.control.sideBySide(layer, railLayer).addTo(map);
+
+
+
+    </script>
+</body>
+</html>
