@@ -166,7 +166,12 @@
                 this.container.style.width = '45px';
                 this.container.style.height = '45px';
                 this.container.onclick = function() {
-                    map.setView([47.39365919797528, 38.91292367990341], 14)
+                    map.setView([36.184722, 37.215833], 13)//Al-Nayrab Military Airbase
+                    //map.setView([33.918889, 36.866389], 13) //Al-Nasiriyah Military Airbase
+                    //map.setView([34.568889, 36.572778], 13) //Al-Qusayr Military Airbase
+                    //map.setView([35.732778, 37.101667], 13) // Abu al-Duhur Military Airbase
+                    //map.setView([35.400833,35.948611], 13) // bassel-al-assad good selection
+                    //map.setView([47.39365919797528, 38.91292367990341], 14) // Damaskus
                 }
                 /* Prevent click events propagation to map */
                 L.DomEvent.disableClickPropagation(this.container);
@@ -236,7 +241,7 @@
                             combineGeoJSON.features = combineGeoJSON.features.concat(item.toGeoJSON().features);
                         });
                         let xhr_eval = new XMLHttpRequest();
-                        xhr_eval.open('POST', 'https://dq4deueez2.execute-api.us-east-1.amazonaws.com/prod/tweet', true);
+                        xhr_eval.open('POST', 'https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/tweet', true);
                         xhr_eval.setRequestHeader('Content-Type', 'application/json');
                         xhr_eval.onload = function () {
                             let json_rsp = JSON.parse(xhr_eval.responseText);
