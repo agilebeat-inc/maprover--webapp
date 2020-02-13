@@ -1,7 +1,7 @@
-/*global WildRydes _config*/
+/*global Maprover _config*/
 
-var WildRydes = window.WildRydes || {};
-WildRydes.map = WildRydes.map || {};
+var Maprover = window.Maprover || {};
+Maprover.map = Maprover.map || {};
 
 (function esriMapScopeWrapper($) {
     require([
@@ -18,7 +18,7 @@ WildRydes.map = WildRydes.map || {};
         Graphic, Point, TextSymbol,
         PictureMarkerSymbol, webMercatorUtils
     ) {
-        var wrMap = WildRydes.map;
+        var wrMap = Maprover.map;
 
         var map = new Map({ basemap: 'gray-vector' });
 
