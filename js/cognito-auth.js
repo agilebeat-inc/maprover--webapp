@@ -130,7 +130,6 @@ var WildRydes = window.WildRydes || {};
     }
 
     function handleRegister(event) {
-        console.log('Marek is great');
         var email = $('#emailInputRegister').val();
         var password = $('#passwordInputRegister').val();
         var password2 = $('#password2InputRegister').val();
