@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Full Screen Leaflet Map</title>
     <meta charset="utf-8">
+    <title>MapRover | Verification</title>
+    <link rel="shortcut icon" type="image/icon" href="./favicon.ico">
     <link rel="stylesheet" href="css/vendor/leaflet.css">
 </head>
 <body>
@@ -12,7 +13,6 @@
 
             <div class="container">
                 <label for="email">Verify Email</label>
-
                 <input type="email" id="emailInputVerify" placeholder="Email" pattern=".*" required>
 
                 <label for="cde">Verification Code</label>
@@ -23,23 +23,13 @@
         </form>
     </div>
 
-    <script src="scripts/jquery-3.4.1.js"></script>
-    <script src="js/vendor/bootstrap.min.js"></script>
-    <script src="js/vendor/aws-cognito-sdk.min.js"></script>
-    <script src="js/vendor/amazon-cognito-identity.min.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/cognito-auth.js"></script>
-    <script src="js/vendor/leaflet.js"></script>
-
-
-    <script>
-        var map = L.map('map', {zoomControl: false}).setView([-41.2858, 174.78682], 14);
-        const mapLink = '<a href="https://openstreetmap.org">OpenStreetMap</a>';
-        L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: `&copy; ${mapLink} Contributors`,
-                maxZoom: 18,
-            }).addTo(map);
-    </script>
+    <script src="scripts/vendor/jquery-3.4.1.js"></script>
+    <script src="scripts/vendor/bootstrap.min.js"></script>
+    <script src="scripts/vendor/aws-cognito-sdk.min.js"></script>
+    <script src="scripts/vendor/amazon-cognito-identity.min.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/cognito-auth.js"></script>
+    <script src="scripts/vendor/leaflet.js"></script>
+    <script src="scripts/map_bg.js"></script>
 </body>
 </html>

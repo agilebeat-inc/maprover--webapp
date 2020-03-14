@@ -3,9 +3,10 @@
 <html lang="en">
 <head>
     <title>Register with maprover.io</title>
-    <meta charset="utf-8"/>
-    <link rel="stylesheet" href="css/vendor/leaflet.css"/>
-    <link rel="stylesheet" href="css/commontheme.css"/>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" type="image/icon" href="./favicon.ico"/>
+    <link rel="stylesheet" href="css/vendor/leaflet.css">
+    <link rel="stylesheet" href="css/commontheme.css">
 </head>
 <body>
     <div id="map"></div>
@@ -19,27 +20,18 @@
                 <input type="password" id="passwordInputRegister" placeholder="Password" pattern=".*" required>
                 <label for="psw">Confirm Password</label>
                 <input type="password" id="password2InputRegister" placeholder="Confirm Password" pattern=".*" required>
-                <button >Submit</button>
+                <button>Submit</button>
             </div>
 
         </form>
     </div>
-    <script src="scripts/jquery-3.4.1.js"></script>
-    <script src="js/vendor/bootstrap.min.js"></script>
-    <script src="js/vendor/aws-cognito-sdk.min.js"></script>
-    <script src="js/vendor/amazon-cognito-identity.min.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/cognito-auth.js"></script>
-    <script src="js/vendor/leaflet.js"></script>
-
-    <script>
-        var map = L.map('map', {zoomControl: false}).setView([-41.2858, 174.78682], 14);
-        mapLink = '<a href="https://openstreetmap.org">OpenStreetMap</a>';
-        L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: `&copy; ${mapLink} Contributors`,
-                maxZoom: 18,
-            }).addTo(map);
-    </script>
+    <script src="scripts/vendor/jquery-3.4.1.js"></script>
+    <script src="scripts/vendor/bootstrap.min.js"></script>
+    <script src="scripts/vendor/aws-cognito-sdk.min.js"></script>
+    <script src="scripts/vendor/amazon-cognito-identity.min.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/cognito-auth.js"></script>
+    <script src="scripts/vendor/leaflet.js"></script>
+    <script src="scripts/map_bg.js"></script>
 </body>
 </html>

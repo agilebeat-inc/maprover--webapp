@@ -78,10 +78,11 @@ span.psw {
     background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
     padding-top: 60px;
 }
+
 /* Modal Content/Box */
 .modal-content {
     background-color: #f6f5f3;
-    margin: 5% auto 20% auto; /* 5% from the top, 15% from the bottom and centered */
+    margin: 5% auto 20% auto; /* 5% from the top, 20% from the bottom and centered */
     border: transparent;
     width: 50%; /* Could be more or less, depending on screen size */
     vertical-align: middle;

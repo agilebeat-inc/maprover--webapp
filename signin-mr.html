@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Full Screen Leaflet Map</title>
+    <title>Maprover | Sign-In</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/vendor/leaflet.css">
     <link rel="stylesheet" href="css/commontheme.css">
+    <link rel="shortcut icon" type="image/icon" href="./favicon.ico">
 </head>
 <body>
     <div id="map"></div>
@@ -15,20 +16,21 @@
                 <input type="email" id="emailInputSignin" placeholder="Email" pattern=".*" required>
                 <label for="psw">Password</label>
                 <input type="password" id="passwordInputSignin" placeholder="Password" pattern=".*" required>
-                <button >Sign in</button>
+                <button>Sign in</button>
+                <!-- this link could use some styling -->
                 <a href="register-mr.html">Register</a>
             </div>
         </form>
     </div>
 
-    <script src="js/scripts/jquery-3.4.1.js"></script>
-    <script src="js/vendor/bootstrap.min.js"></script>
-    <script src="js/vendor/aws-cognito-sdk.min.js"></script>
-    <script src="js/vendor/amazon-cognito-identity.min.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/cognito-auth.js"></script>
-    <script src="js/vendor/leaflet.js"></script>
-
+    <script src="scripts/vendor/jquery-3.4.1.js"></script>
+    <script src="scripts/vendor/bootstrap.min.js"></script>
+    <script src="scripts/vendor/aws-cognito-sdk.min.js"></script>
+    <script src="scripts/vendor/amazon-cognito-identity.min.js"></script>
+    <script src="scripts/vendor/leaflet.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/cognito-auth.js"></script>
+    <script src="scripts/map_bg.js"></script>
     <script>
         var HelpControl =  L.Control.extend({
 
@@ -65,14 +67,7 @@
                 return this.container;
             }
         });
-        var map = L.map('map', {zoomControl: false}).setView([-41.2858, 174.78682], 14);
-        const mapLink = '<a href="https://openstreetmap.org">OpenStreetMap</a>';
-        L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: `&copy; ${mapLink} Contributors`,
-                maxZoom: 18,
-            }).addTo(map);
-        helpControl = new HelpControl();
+        const helpControl = new HelpControl();
         map.addControl(helpControl);
     </script>
 </body>

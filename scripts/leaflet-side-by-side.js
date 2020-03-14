@@ -4,8 +4,8 @@ var L = (typeof window !== "undefined" ? window['L'] : typeof global !== "undefi
 require('./layout.css')
 require('./range.css')
 
-var mapWasDragEnabled
-var mapWasTapEnabled
+var mapWasDragEnabled;
+var mapWasTapEnabled;
 
 // Leaflet v0.7 backwards compatibility
 function on (el, types, fn, context) {
