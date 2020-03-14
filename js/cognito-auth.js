@@ -3,23 +3,22 @@
 var Maprover = window.Maprover || {};
 
 (function scopeWrapper($) {
-    var signinUrl = '/signin-mr.html';
 
+    const signinUrl = '/signin-mr.html';
+    
+    if (!(_config.cognito.userPoolId &&
+        _config.cognito.userPoolClientId &&
+        _config.cognito.region)) {
+            $('#noCognitoMessage').show();
+            return;
+        }
+    
     var poolData = {
         UserPoolId: _config.cognito.userPoolId,
         ClientId: _config.cognito.userPoolClientId
     };
 
-    var userPool;
-
-    if (!(_config.cognito.userPoolId &&
-          _config.cognito.userPoolClientId &&
-          _config.cognito.region)) {
-        $('#noCognitoMessage').show();
-        return;
-    }
-
-    userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    let userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
     if (typeof AWSCognito !== 'undefined') {
         AWSCognito.config.region = _config.cognito.region;
@@ -47,10 +46,13 @@ var Maprover = window.Maprover || {};
         }
     });
 
-
     /*
      * Cognito User Pool functions
      */
+
+    function toUsername(email) {
+        return email.replace('@', '-at-');
+    }
 
     function register(email, password, onSuccess, onFailure) {
         var dataEmail = {
@@ -100,9 +102,6 @@ var Maprover = window.Maprover || {};
         });
     }
 
-    function toUsername(email) {
-        return email.replace('@', '-at-');
-    }
 
     /*
      *  Event Handlers
@@ -124,6 +123,7 @@ var Maprover = window.Maprover || {};
                 window.location.href = 'index-mr.html';
             },
             function signinError(err) {
+                console.log(err);
                 alert(err);
             }
         );
@@ -137,12 +137,13 @@ var Maprover = window.Maprover || {};
         var onSuccess = function registerSuccess(result) {
             var cognitoUser = result.user;
             console.log('user name is ' + cognitoUser.getUsername());
-            var confirmation = ('Registration successful. Please check your email inbox or spam folder for your verification code.');
+            var confirmation = 'Registration successful. Please check your email inbox or spam folder for your verification code.';
             if (confirmation) {
                 window.location.href = 'verify-mr.html';
             }
         };
         var onFailure = function registerFailure(err) {
+            console.log(err);
             alert(err);
         };
         event.preventDefault();
@@ -160,12 +161,13 @@ var Maprover = window.Maprover || {};
         event.preventDefault();
         verify(email, code,
             function verifySuccess(result) {
-                console.log('call result: ' + result);
+                console.log(`call result: ${result}`);
                 console.log('Successfully verified');
                 alert('Verification successful. You will now be redirected to the login page.');
                 window.location.href = signinUrl;
             },
             function verifyError(err) {
+                console.log(err);
                 alert(err);
             }
         );

@@ -29,21 +29,18 @@
                 this.container.dataset[data] = this.options.datas[data];
             }
 
-
             /* Prevent click events propagation to map */
             L.DomEvent.disableClickPropagation(this.container);
 
             /* Prevent right click event propagation to map */
-            L.DomEvent.on(this.container, 'contextmenu', function (ev)
-            {
+            L.DomEvent.on(this.container, 'contextmenu', function (ev) {
                 L.DomEvent.stopPropagation(ev);
             });
 
             /* Prevent scroll events propagation to map when cursor on the div */
             L.DomEvent.disableScrollPropagation(this.container);
 
-            for (var event in this.options.events)
-            {
+            for (var event in this.options.events) {
                 L.DomEvent.on(this.container, event, this.options.events[event], this.container);
             }
 
@@ -51,8 +48,7 @@
         },
 
         onRemove: function (map) {
-            for (var event in this.options.events)
-            {
+            for (var event in this.options.events) {
                 L.DomEvent.off(this.container, event, this.options.events[event], this.container);
             }
         },

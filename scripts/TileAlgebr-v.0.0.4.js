@@ -4,7 +4,7 @@ window.URL = window.URL || window.webkitURL;
 
 var tileAlgebra = (function () {
     let max = 0;
-    let current_progress=0;
+    let current_progress = 0;
 
     let _tile2long = function (x, z) {
         return (x / Math.pow(2, z) * 360 - 180);
@@ -31,11 +31,11 @@ var tileAlgebra = (function () {
         return (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
     };
 
-    let _handle_progress_bar = function(progressBar, map) {
+    let _handle_progress_bar = function(progressBar) {
         let cp = Math.round((100*current_progress)/max);
-        if (cp == 100) {
+        if (cp >= 100) {
             max = 0;
-            current_progress=0;
+            current_progress = 0;
             progressBar.remove();
         }
         $("#dynamic")
@@ -44,14 +44,14 @@ var tileAlgebra = (function () {
             .text(cp + "% Complete");
     };
 
-    let _validate_tile = function (x, y, z, polygon_gj, layerGroup, progressBar, map) {
+    let _validate_tile = function (x, y, z, polygon_gj, layerGroup, progressBar) {
         let polygon_tf = turf.polygon(polygon_gj.geometry.coordinates);
         let rect = _get_as_rectangle(x, y, z);
         let rect_tf = turf.polygon(rect.toGeoJSON().geometry.coordinates);
         if (!turf.booleanContains(polygon_tf, rect_tf)) {
             return;
         }
-        ;
+
         downloadedImg = new Image;
 
         _onload = function () {
@@ -70,6 +70,7 @@ var tileAlgebra = (function () {
                 "tile_base64": tileB64
             };
             let xhr_eval = new XMLHttpRequest();
+            // figure out from whence came this URL
             xhr_eval.open('POST', 'https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer', true);
             xhr_eval.setRequestHeader('Content-Type', 'application/json');
             xhr_eval.onload = function () {
@@ -81,7 +82,7 @@ var tileAlgebra = (function () {
             };
             increase_counter = function() {
                 current_progress++;
-                _handle_progress_bar(progressBar, map);
+                _handle_progress_bar(progressBar);
             }
             xhr_eval.onloadend = increase_counter;
             xhr_eval.send(JSON.stringify(body_json));
@@ -102,7 +103,7 @@ var tileAlgebra = (function () {
 
     return {
         bbox_coverage: function (northEast, southWest, z, polygon_gj, progressBar, map) {
-            _handle_progress_bar();
+            _handle_progress_bar(progressBar);
             let layerGroup = L.layerGroup([]);
             let stop_x = _long2tile(northEast.lng, z);
             let start_y = _lat2tile(northEast.lat, z);
@@ -111,10 +112,7 @@ var tileAlgebra = (function () {
             for (let x = start_x; x <= stop_x; x++) {
                 for (let y = start_y; y <= stop_y; y++) {
                     for (let i = 0; i < 5; i++) {
-                        let isSuccess = _validate_tile(x, y, z, polygon_gj, layerGroup, progressBar, map);
-                        if (isSuccess) {
-                            break;
-                        }
+                        if(_validate_tile(x, y, z, polygon_gj, layerGroup, progressBar, map)) break;
                     }
                 };
             };
