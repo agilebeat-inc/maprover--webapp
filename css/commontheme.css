@@ -1,17 +1,25 @@
+:root {
+    --ctrl-dim: 45px;
+    --ctrl-dim-active: 55px;
+}
+
 body {
     padding: 0;
     margin: 0;
     font-family: "Times New Roman";
     color: #3f3f3f;
 }
+
 html, body, #map {
     height: 100%;
     width: 100%;
     overflow: hidden;
 }
+
 form {
     border: 1px solid #f1f1f1;
 }
+
 #form-wrap {
     background-color: transparent;
     opacity: 1;
@@ -23,6 +31,7 @@ form {
     height: auto;
     padding: 5px;
 }
+
 /* Full-width input fields */
 input[type=text], input[type=password], input[type=email] {
     width: 90%;
@@ -33,6 +42,7 @@ input[type=text], input[type=password], input[type=email] {
     border: 1px solid #f6f5f3;
     box-sizing: border-box;
 }
+
 button {
     background-color: #4b6777;
     color: whitesmoke;
@@ -42,9 +52,11 @@ button {
     cursor: pointer;
     width: 80%;
 }
+
 button:hover {
     opacity: 0.8;
 }
+
 /* Center the image and position the close button */
 .imgcontainer {
     text-align: center;
@@ -52,18 +64,22 @@ button:hover {
     margin: 24px 0 12px 0;
     position: absolute;
 }
+
 img.avatar {
     width: 10%;
     border-radius: 15%;
     vertical-align: middle;
 }
+
 .container {
     padding: 16px;
 }
+
 span.psw {
     float: right;
     padding-top: 1px;
 }
+
 /* The Modal (background) */
 .modal {
     position: absolute; /* Stay in place */
@@ -87,6 +103,7 @@ span.psw {
     width: 50%; /* Could be more or less, depending on screen size */
     vertical-align: middle;
 }
+
 /* The Close Button (x) */
 .close {
     position: absolute;
@@ -96,16 +113,19 @@ span.psw {
     font-size: 5px;
     font-weight: bold;
 }
+
 .close:hover,
 .close:focus {
     color: red;
     cursor: pointer;
 }
+
 /* Add Zoom Animation */
 .animate {
     -webkit-animation: animatezoom 0.6s;
     animation: animatezoom 0.6s
 }
+
 @-webkit-keyframes animatezoom {
     from {
         -webkit-transform: scale(0)
@@ -114,6 +134,7 @@ span.psw {
         -webkit-transform: scale(1)
     }
 }
+
 @keyframes animatezoom {
     from {
         transform: scale(0)
@@ -122,6 +143,7 @@ span.psw {
         transform: scale(1)
     }
 }
+
 /* Change styles for span and cancel button on extra small screens */
 @media screen and (max-width: 300px) {
     span.psw {
@@ -132,3 +154,25 @@ span.psw {
         width: 100%;
     }
 }
+
+/* map control buttons - DRY */
+.mapctrl {
+    width: var(--ctrl-dim);
+    height: var(--ctrl-dim);
+    background-size: var(--ctrl-dim);
+    background-color: white;
+    /* padding: 30px; */
+}
+
+.mapctrl-active {
+    width: var(--ctrl-dim-active);
+    height: var(--ctrl-dim-active);
+    background-size: var(--ctrl-dim-active);
+    background-color: white;
+}
+
+/* To work around this issue (Firefox-specific?)
+ * https://github.com/Leaflet/Leaflet/issues/4686
+ * we can consider using 
+ * .leaflet-fade-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-zoom-animated { will-change:auto !important; }
+ */

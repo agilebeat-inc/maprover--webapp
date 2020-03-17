@@ -1,61 +1,72 @@
+// custom UI components for the main Maprover page
+// mostly, this defines the interavtive buttons that are laid on top of the map
+
+// TODO list
+// [ ] when the screen height is small, the top-right and bottom-right buttons overlap each other
+
 var map = L.map('map', {
     minZoom: 0,
     maxZoom: 19
-//}).setView([47.39365919797528, 38.91292367990341], 18);
-//}).setView([-36.30215075678218, 174.9156190124816], 12);
+    //}).setView([47.39365919797528, 38.91292367990341], 18);
+    //}).setView([-36.30215075678218, 174.9156190124816], 12);
 }).setView([-37.78333, 175.28333], 11);
-var layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+var layer = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', 
+    {
     minZoom: 0,
     maxZoom: 19,
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-        '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-        'Imagery © <a href="http://mapbox.com">Mapbox </a>' +
-        'Powerd by © <a href="https://www.agilebeat.com">Agilebeat Inc. </a>',
+    attribution: `Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>Powerd by © <a href="https://www.agilebeat.com">Agilebeat Inc.</a>`,
     id: 'examples.map-i875mjb7',
     crossOrigin: true
 });
 
-// this needs a refactor - create a simple CSS class for the map controls
+// a and b are the two classes we toggle between whenever this function is fired
+// returns the new active class
+function classToggler(elem,a,b) {
+    let currClass = elem.className;
+    let newClass = currClass === a ? b : a;
+    elem.className = newClass;
+    return newClass;
+}
+
+// locations where tweet tags are placed
+var selectionList = [];
+
+// helper function that combines the selected features' geoJSON representations into a flat array
+// used in the 'filterTweet' and 'download' controls
+function flatten_geoJSON() {
+    if(selectionList.length === 0) return [];
+    return {
+        "type" : "FeatureCollection",
+        // see https://stackoverflow.com/questions/5080028/what-is-the-most-efficient-way-to-concatenate-n-arrays
+        "features": [].concat.apply([],selectionList.map( item => item.toGeoJSON().features))
+    };
+}
+
 var RailControl =  L.Control.extend({
-    options: {
-        position: 'topright'
-    },
+
     container: null,
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-        this.container.style.backgroundColor = 'white';
+        // need to include an attribute which is the toggle?
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/railroad-icon.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
-        let container = this.container;
         this.container.onclick = function() {
-            if (container.style.width == '55px') {
-                container.style.backgroundSize = "45px 45px";
-                container.style.width = '45px';
-                container.style.height = '45px';
-            } else {
-                container.style.backgroundSize = "55px 55px";
-                container.style.width = '55px';
-                container.style.height = '55px';
-            }
+            // inside this callback, 'this' now refers to the container!
+            let nc = classToggler(this,'leaflet-bar leaflet-control mapctrl','leaflet-bar leaflet-control mapctrl-active');
+            this.setAttribute('data-active',nc.includes('mapctrl-active') ? 'active' : 'inactive');
         }
         /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
 
         /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
-            L.DomEvent.stopPropagation(ev);
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
+            L.DomEvent.stopPropagation(ev)
         });
 
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        // what is this???
-        for (var event in this.options.events) {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
         return this.container;
     },
     getContainer: function () {
@@ -64,28 +75,14 @@ var RailControl =  L.Control.extend({
 });
 
 var AirfieldControl =  L.Control.extend({
-    options: {
-        position: 'topright'
-    },
+
     container: null,
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-        this.container.style.backgroundColor = 'white';
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/jet-icon.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
-        let container = this.container;
         this.container.onclick = function() {
-            if (container.style.width == '55px') {
-                container.style.backgroundSize = "45px 45px";
-                container.style.width = '45px';
-                container.style.height = '45px';
-            } else {
-                container.style.backgroundSize = "55px 55px";
-                container.style.width = '55px';
-                container.style.height = '55px';
-            }
+            let nc = classToggler(this,'leaflet-bar leaflet-control mapctrl','leaflet-bar leaflet-control mapctrl-active');
+            this.setAttribute('data-active',nc.includes('mapctrl-active') ? 'active' : 'inactive');
         }
         /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
@@ -99,10 +96,9 @@ var AirfieldControl =  L.Control.extend({
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        for (var event in this.options.events)
-        {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
+        // for (var event in this.options.events) {
+        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
+        // }
         return this.container;
     },
     getContainer: function () {
@@ -112,55 +108,42 @@ var AirfieldControl =  L.Control.extend({
 
 var locationControl =  L.Control.extend({
 
-    options: {
-        position: 'topright'
-    },
-
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-        this.container.style.backgroundColor = 'white';
+
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/location-icon.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
         this.container.clickCounter = 0;
         this.container.onclick = function() {
+            
+            const locs = [
+                [33.411522, 36.515558, 14], // Damaskus
+                [36.184722, 37.215833, 13], // Al-Nayrab Military Airbase
+                [33.918889, 36.866389, 13], // Al-Nasiriyah Military Airbase
+                [34.568889, 36.572778, 13], // Al-Qusayr Military Airbase
+                [35.732778, 37.101667, 13], // Abu al-Duhur Military Airbase
+                [35.400833, 35.948611, 13], // bassel-al-assad good selection
+                [47.39365919797528, 38.91292367990341, 14], // Mariupol/Rostov on the Black Sea
+                [-37.78333, 175.28333, 11] // Hamilton, NZ
+            ];
             this.clickCounter++;
-            if (this.clickCounter === 1)
-                map.setView([33.411522, 36.515558], 14); // Damaskus
-            else if (this.clickCounter === 2)
-                map.setView([36.184722, 37.215833], 13);//Al-Nayrab Military Airbase
-            else if (this.clickCounter === 3)
-                map.setView([33.918889, 36.866389], 13); //Al-Nasiriyah Military Airbase
-            else if (this.clickCounter === 4)
-                map.setView([34.568889, 36.572778], 13); //Al-Qusayr Military Airbase
-            else if (this.clickCounter === 5)
-                map.setView([35.732778, 37.101667], 13); // Abu al-Duhur Military Airbase
-            else if (this.clickCounter === 6)
-                map.setView([35.400833,35.948611], 13); // bassel-al-assad good selection
-            else if (this.clickCounter === 7)
-                map.setView([-37.78333, 175.28333], 11);
-            else if (this.clickCounter === 8)
-                map.setView([47.39365919797528, 38.91292367990341], 14); // Russia
-            if (this.clickCounter === 9)
-                this.clickCounter = 0;
+            this.clickCounter %= locs.length;
+            const trip = locs[this.clickCounter];
+            map.setView([trip[0],trip[1]],trip[2]);
         }
         /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
 
         /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        for (var event in this.options.events)
-        {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
+        // for (var event in this.options.events) {
+        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
+        // }
         return this.container;
     },
     getContainer: function () {
@@ -170,40 +153,21 @@ var locationControl =  L.Control.extend({
 
 var TweetControl =  L.Control.extend({
 
-    options: {
-        position: 'topright'
-    },
-
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
-        this.container.style.backgroundColor = 'white';
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/tweet-icon.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
 
         this.container.onclick = function(){
-            let container = this;
-            if (this.style.width == '55px') {
-                this.style.backgroundSize = "45px 45px";
-                this.style.width = '45px';
-                this.style.height = '45px';
-                map.removeLayer(this.filtered_tweets)
+
+            let nc = classToggler(this,'leaflet-bar leaflet-control mapctrl','leaflet-bar leaflet-control mapctrl-active');
+            this.setAttribute('data-active',nc.includes('mapctrl-active') ? 'active' : 'inactive');
+            if(this.getAttribute('data-active') === 'active') {
                 return;
-            } else {
-                this.style.backgroundSize = "55px 55px";
-                this.style.width = '55px';
-                this.style.height = '55px';
             }
-            // var options = {
-            //     folder: 'maprover-selection',
-            //     types: {
-            //         point: 'points',
-            //         polygon: 'polygons',
-            //         line: 'lines'
-            //     }
-            // }
+
+            // need to do this and return if in inactive state?
+            // map.removeLayer(this.filtered_tweets);
 
             let combineGeoJSON = {
                 "type" : "FeatureCollection",
@@ -214,87 +178,54 @@ var TweetControl =  L.Control.extend({
             xhr_eval.setRequestHeader('Content-Type', 'application/json');
             xhr_eval.onload = function () {
                 let json_rsp = JSON.parse(xhr_eval.responseText);
-                container.filtered_tweets = L.geoJSON(json_rsp)
-                container.filtered_tweets.addTo(map);
+                this.filtered_tweets = L.geoJSON(json_rsp)
+                this.filtered_tweets.addTo(map);
             };
             xhr_eval.send(JSON.stringify(combineGeoJSON));
         }
-
 
         /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
 
         /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        for (var event in this.options.events)
-        {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
+        // for (var event in this.options.events) {
+        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
+        // }
         return this.container;
-
     }
 });
 
 var FilterTweetControl =  L.Control.extend({
 
-    options: {
-        position: 'topright'
-    },
-
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
-        this.container.style.backgroundColor = 'white';
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/filter-icon.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
+        
+        this.container.onclick = function() {
 
-        this.container.onclick = function(){
-            let container = this;
             if (selectionList.length > 0) {
-                if (this.style.width == '55px') {
-                    this.style.backgroundSize = "45px 45px";
-                    this.style.width = '45px';
-                    this.style.height = '45px';
-                    map.removeLayer(this.filtered_tweets)
-                    return
-                } else {
-                    this.style.backgroundSize = "55px 55px";
-                    this.style.width = '55px';
-                    this.style.height = '55px';
-                }
-                // var options = {
-                //     folder: 'maprover-selection',
-                //     types: {
-                //         point: 'points',
-                //         polygon: 'polygons',
-                //         line: 'lines'
-                //     }
-                // }
-                let combineGeoJSON = {
-                    "type" : "FeatureCollection",
-                    "features": []
-                };
-                selectionList.forEach(function (item, index) {
-                    combineGeoJSON.features = combineGeoJSON.features.concat(item.toGeoJSON().features);
-                });
+
+                map.removeLayer(this.filtered_tweets);
+                
+                let combinedGeoJSON = flatten_geoJSON();
+                
                 let xhr_eval = new XMLHttpRequest();
                 xhr_eval.open('POST', 'https://dq4deueez2.execute-api.us-east-1.amazonaws.com/prod/filter', true);
                 xhr_eval.setRequestHeader('Content-Type', 'application/json');
                 xhr_eval.onload = function () {
                     let json_rsp = JSON.parse(xhr_eval.responseText);
-                    container.filtered_tweets = L.geoJSON(json_rsp)
-                    container.filtered_tweets.addTo(map);
+                    this.filtered_tweets = L.geoJSON(json_rsp)
+                    this.filtered_tweets.addTo(map);
                 };
-                xhr_eval.send(JSON.stringify(combineGeoJSON));
+                xhr_eval.send(JSON.stringify(combinedGeoJSON));
             }
         }
 
@@ -302,18 +233,16 @@ var FilterTweetControl =  L.Control.extend({
         L.DomEvent.disableClickPropagation(this.container);
 
         /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        for (var event in this.options.events)
-        {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
+        // for (var event in this.options.events) {
+        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
+        // }
         return this.container;
     }
 });
@@ -325,18 +254,10 @@ var docuGuide =  L.Control.extend({
     },
 
     onAdd: function (map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-
-        container.style.backgroundColor = 'white';
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         container.style.backgroundImage = "url(images/help7.png)";
-        container.style.backgroundSize = "45px 45px";
-        container.style.width = '45px';
-        container.style.height = '45px';
-
-        container.onclick = function(){
-            window.open("guide.html");
-        }
-
+        container.style.cursor = 'pointer'; // perhaps this sould apply to all mapctrl items?
+        container.onclick = function() { window.open("guide.html");}
         return container;
     }
 });
@@ -348,16 +269,12 @@ var exportControl =  L.Control.extend({
     },
 
     onAdd: function (map) {
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
-        this.container.style.backgroundColor = 'white';
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/export.png)";
-        this.container.style.backgroundSize = "45px 45px";
-        this.container.style.width = '45px';
-        this.container.style.height = '45px';
 
-        this.container.onclick = function(){
-            var options = {
+        this.container.onclick = function() {
+            const options = {
                 folder: 'maprover-selection',
                 types: {
                     point: 'points',
@@ -366,14 +283,8 @@ var exportControl =  L.Control.extend({
                 }
             }
             if (selectionList.length > 0) {
-                let combineGeoJSON = {
-                    "type" : "FeatureCollection",
-                    "features": []
-                };
-                selectionList.forEach(function (item, index) {
-                    combineGeoJSON.features = combineGeoJSON.features.concat(item.toGeoJSON().features);
-                });
-                shpwrite.download(combineGeoJSON, options);
+                let combinedGeoJSON = flatten_geoJSON();
+                shpwrite.download(combinedGeoJSON, options);
             }
         }
 
@@ -381,50 +292,47 @@ var exportControl =  L.Control.extend({
         L.DomEvent.disableClickPropagation(this.container);
 
         /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
         /* Prevent scroll events propagation to map when cursor on the div */
         L.DomEvent.disableScrollPropagation(this.container);
 
-        for (var event in this.options.events)
-        {
-            L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        }
         return this.container;
     }
 });
 
 let rail_control = new RailControl();
-map.addControl(rail_control);
 let airfield_control = new AirfieldControl();
+let export_control = new exportControl();
+
+map.addControl(rail_control);
 map.addControl(airfield_control);
 map.addControl(new TweetControl());
 map.addControl(new FilterTweetControl());
 map.addControl(new docuGuide());
 map.addControl(new locationControl());
-exportControl = new exportControl();
-map.addControl(exportControl);
+map.addControl(export_control);
 
 layer.addTo(map);
 
 var editableLayers = new L.FeatureGroup();
 map.addLayer(editableLayers);
 
-const options = {
+const drawing_options = {
     position: 'topleft',
     draw: {
-        polyline: false,
         polygon: {
             allowIntersection: false, // Restricts shapes to simple polygons
             drawError: {
                 color: '#e1e100', // Color the shape will turn when intersects
-                message: "<strong>Error<strong> line can't intersect itself!" // Message that will show when intersect
+                message: "<strong>Error:<strong> boundary can't intersect itself!" // Message that will show when intersect
             }
         },
-        circle: false, // Turns off this drawing tool
+        // Turns off these drawing tools
+        polyline: false,
+        circle: false,
         rectangle: false,
         marker: false
     },
@@ -434,34 +342,39 @@ const options = {
     }
 };
 
-const drawControl = new L.Control.Draw(options);
+const drawControl = new L.Control.Draw(drawing_options);
 map.addControl(drawControl);
 
-var selectionList = [];
 map.on(L.Draw.Event.CREATED, function(e) {
 
-    const type = e.layerType, layer = e.layer;
+    console.log("now an event was created!");
     let progressBar = L.control.custom({
         position: 'bottomleft',
-        content : '<div class="panel-body">'+
-            '    <div class="progress" style="margin-bottom:0px;">'+
-            '        <div id="dynamic" class="progress-bar progress-bar-striped passive" role="progressbar" aria-valuenow="41" '+
-            '             aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 0%">'+
-            '            0% Completed'+
-            '        </div>'+
-            '    </div>'+
-            '</div>',
-        classes: 'panel panel-default',
-        style: { // superflous?
+        content : 
+        '<div class="panel-body">'+
+        '    <div class="progress" style="margin-bottom:0px;">'+
+        '        <div id="dynamic" class="progress-bar progress-bar-striped passive" role="progressbar" aria-valuenow="41" '+
+        '             aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 0%">'+
+        '            0% Completed'+
+        '        </div>'+
+        '    </div>'+
+        '</div>',
+        classes: 'panel panel-default', // by default 'leaflet-control' is also one of the classes
+        style: { // superflous? we should define these properties in a CSS class and just include that in 'classes' arg
             width: '200px',
             margin: '20px',
             padding: '0px',
         },
     });
-    let rec_lvl = Math.min(this.getZoom() + 5,19);
+    const layer = e.layer;
+    const rec_lvl = Math.min(this.getZoom() + 5,19);
+    console.log(`The zoom in use is ${rec_lvl}`);
+    console.log(`Event layer type: ${e.layerType}`);
+    console.log(`Layer bounds are: ${layer._bounds._northEast} and ${layer._bounds._southWest}`);
     // needs refactoring to generalize to different types of tiles
-    if (type === 'polygon') {
-        if (rail_control.getContainer().style.width=='55px') { // '55px' is a proxy for the button being 'active'
+    if (e.layerType === 'polygon') {
+        if (rail_control.getContainer().getAttribute('data-active') === 'active') {
+            console.log(`Searching for rail tiles!`);
             progressBar.addTo(this);
             let layerGroup = tileAlgebra.bbox_coverage(
                 'https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer',
@@ -473,7 +386,8 @@ map.on(L.Draw.Event.CREATED, function(e) {
             );
             layerGroup.addTo(this);
             selectionList.push(layerGroup);
-        } else if (airfield_control.getContainer().style.width=='55px') {
+        } else if (airfield_control.getContainer().getAttribute('data-active') === 'active') {
+            console.log(`Searching for airfield tiles!`);
             progressBar.addTo(this);
             let layerGroup = tileAlgebra.bbox_coverage(
                 'https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer',

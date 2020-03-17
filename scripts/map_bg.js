@@ -4,6 +4,7 @@
 
 const mapLink = '<a href="https://openstreetmap.org">OpenStreetMap</a>';
 const map = L.map('map', {zoomControl: false}).setView([-41.2858, 174.78682], 14);
+
 L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: `&copy; ${mapLink} Contributors`,

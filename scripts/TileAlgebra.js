@@ -1,10 +1,10 @@
-//cross browser
+// cross browser (this is never referenced so why is it here?)
 window.URL = window.URL || window.webkitURL;
 
 
 var tileAlgebra = (function () {
-    let max = 0;
-    let current_progress = 0;
+
+    // let current_progress = 0;
 
     let _tile2long = function (x, z) {
         return (x / Math.pow(2, z) * 360 - 180);
@@ -16,21 +16,22 @@ var tileAlgebra = (function () {
     };
 
     let _get_as_rectangle = function (x, y, z) {
-        let nw_long = _tile2long(parseFloat(x), parseFloat(z));
-        let nw_lat = _tile2lat(parseFloat(y), parseFloat(z));
-        let se_long = _tile2long(parseFloat(x) + 1, parseFloat(z));
-        let se_lat = _tile2lat(parseFloat(y) + 1, parseFloat(z));
-        let rect = L.rectangle([[nw_lat, nw_long], [se_lat, se_long]]);
-        return rect;
+        const nz = parseFloat(z), nx = parseFloat(x), ny = parseFloat(y);
+        let nw_long = _tile2long(nx, nz);
+        let nw_lat = _tile2lat(ny, nz);
+        let se_long = _tile2long(nx + 1, nz);
+        let se_lat = _tile2lat(ny + 1, nz);
+        return L.rectangle([[nw_lat, nw_long], [se_lat, se_long]]);
     }
 
     let _long2tile = function (lon, zoom) {
         return (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
-    };
+    }
+
     let _lat2tile = function (lat, zoom) {
         const deg = lat * Math.PI / 180;
         return  Math.pow(2, zoom) * Math.floor((1 - Math.log(Math.tan(deg) + 1 / Math.cos(deg)) / Math.PI) / 2);
-    };
+    }
 
     let _handle_progress_bar = function(progressBar) {
         let cp = Math.round(100 * current_progress / max);
@@ -40,9 +41,9 @@ var tileAlgebra = (function () {
             progressBar.remove();
         }
         $("#dynamic")
-            .css("width", cp + "%")
+            .css("width", `${cp}%`)
             .attr("aria-valuenow", cp)
-            .text(cp + "% Complete");
+            .text(`${cp}% complete`);
     };
 
     let _mark_xyz_tile = function(x, y, z, tile_map) {
@@ -56,12 +57,12 @@ var tileAlgebra = (function () {
 
     let _check_if_xyz_tile_is_marked = function(x, y, z, tile_map) {
         if (typeof tile_map.get(z) === 'undefined')
-            return false
+            return false;
         if (typeof tile_map.get(z).get(x) === 'undefined')
-            return false
+            return false;
         if (typeof tile_map.get(z).get(x).get(y) === 'undefined')
-            return false
-        return true
+            return false;
+        return true;
     }
 
     let _add_rectangle = function(x, y, z, layerGroup, tile_map) {
@@ -75,26 +76,11 @@ var tileAlgebra = (function () {
     let _add_rectangle_with_neighbors = function(x, y, z, layerGroup, tile_map) {
         const coords = [[x,y],[x-1,y],[x-1,y-1],[x,y-1],[x+1,y],[x+1,y-1],[x+1,y+1],[x-1,y+1]];
         coords.forEach(cc => _add_rectangle(cc[0],cc[1],z,layerGroup,tile_map));
-        // _add_rectangle(x, y, z, layerGroup, tile_map);
-        // _add_rectangle(x-1, y, z, layerGroup, tile_map);
-        // _add_rectangle(x-1, y-1, z, layerGroup, tile_map);
-        // _add_rectangle(x, y-1, z, layerGroup, tile_map);
-        // _add_rectangle(x+1, y-1, z, layerGroup, tile_map);
-        // _add_rectangle(x+1, y, z, layerGroup, tile_map);
-        // _add_rectangle(x+1, y+1, z, layerGroup, tile_map);
-        // _add_rectangle(x, y+1, z, layerGroup, tile_map);
-        // _add_rectangle(x-1, y+1, z, layerGroup, tile_map);
     }
 
-
-    let _validate_tile = function (service_endpoint, x, y, z, polygon_gj, layerGroup, progressBar, tile_map) {
-        let polygon_tf = turf.polygon(polygon_gj.geometry.coordinates);
-        let rect = _get_as_rectangle(x, y, z);
-        let rect_tf = turf.polygon(rect.toGeoJSON().geometry.coordinates);
-        if (!turf.booleanContains(polygon_tf, rect_tf)) {
-            return;
-        }
-
+    let _validate_tile = function (service_endpoint, x, y, z, layerGroup, tile_map) {
+        
+        // do we need to specify a size? This way, the default is zero
         downloadedImg = new Image;
 
         _onload = function () {
@@ -109,57 +95,76 @@ var tileAlgebra = (function () {
             let body_json = {
                 "z": z.toString(),
                 "x": x.toString(),
-                "y": y.toString() + ".png",
+                "y": y.toString() + ".png", // why is there a file extension here??
                 "tile_base64": tileB64
             };
+            // this is a good use case for WebWorkers; see https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
             let xhr_eval = new XMLHttpRequest();
             xhr_eval.open('POST', service_endpoint, true);
             xhr_eval.setRequestHeader('Content-Type', 'application/json');
             xhr_eval.onload = function () {
                 let json_rsp = JSON.parse(xhr_eval.responseText);
                 if (json_rsp.RailClass) {
-                    _add_rectangle_with_neighbors(x, y, z, layerGroup, tile_map)
-                    //let rect = _get_as_rectangle(x, y, z);
-                    //layerGroup.addLayer(rect);
+                    _add_rectangle_with_neighbors(x, y, z, layerGroup, tile_map);
                 }
             };
-            increase_counter = function() {
-                current_progress++;
-                _handle_progress_bar(progressBar);
-            }
             xhr_eval.onloadend = increase_counter;
             xhr_eval.send(JSON.stringify(body_json));
         };
-        max++;
+        
         downloadedImg.crossOrigin = "Anonymous";
         downloadedImg.addEventListener("load", _onload, false);
         let success = true;
-        downloadedImg.addEventListener("error", function () {success=false;current_progress++;}, false);
-        downloadedImg.addEventListener("timeout", function () {current_progress++;}, false);
-        // let servers = 'abc';
-        // let server_str = servers[Math.floor(Math.random() * servers.length)];
-        let tileURL = `https://50dht0jpe7.execute-api.us-east-1.amazonaws.com/prod/wmts/${z}/${x}/${y}.png`;
-        //let tileURL = 'https://'+ server_str +'.tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png';
+        downloadedImg.addEventListener("error", function () {success = false; current_progress++;}, false);
+        downloadedImg.addEventListener("timeout", function () { current_progress++; }, false);
+        let servers = 'abc';
+        let server_str = servers[Math.floor(Math.random() * servers.length)];
+        // let tileURL = `https://50dht0jpe7.execute-api.us-east-1.amazonaws.com/prod/wmts/${z}/${x}/${y}.png`;
+        let tileURL = `https://${server_str}.tile.openstreetmap.org/${z}/${x}/${y}.png`;
         downloadedImg.src = tileURL;
         return success;
     };
 
+    // given the polygon geoJSON, figure out which tiles are within the polygon
+    // this may benefit from rewriting - we start with coords, convert to tile indices,
+    // then convert each index tuple BACK to coords
+    // should this be parallelized or given to workers? If it is very fast compared to sending all the HTTP requests
+    // to AWS, then perhaps we just do this in the main thread and just offload the validation
+    let filter_tiles = function(NE,SW,z,polygon_gj) {
+        const polygon_tf = turf.polygon(polygon_gj.geometry.coordinates);
+        let stop_x  = _long2tile(NE.lng, z);
+        let start_y = _lat2tile(NE.lat, z);
+        let start_x = _long2tile(SW.lng, z);
+        let stop_y  = _lat2tile(SW.lat, z);
+        res = [];
+        for (let x = start_x; x <= stop_x; x++) {
+            for (let y = start_y; y <= stop_y; y++) {
+                let rect = _get_as_rectangle(x, y, z);
+                let rect_tf = turf.polygon(rect.toGeoJSON().geometry.coordinates);
+                if (turf.booleanContains(polygon_tf, rect_tf)) {    
+                    res.push([x,y,z]);
+                }
+            }
+        }
+        return res;
+    }
+
     return {
-        bbox_coverage: function (service_endpoint, northEast, southWest, z, polygon_gj, progressBar, map) {
-            _handle_progress_bar();
+        bbox_coverage: function (service_endpoint, northEast, southWest, z, polygon_gj, map) {
+            
             let layerGroup = L.layerGroup([]);
-            let stop_x = _long2tile(northEast.lng, z);
-            let start_y = _lat2tile(northEast.lat, z);
-            let start_x = _long2tile(southWest.lng, z);
-            let stop_y = _lat2tile(southWest.lat, z);
             let tile_map = new Map();
-            for (let x = start_x; x <= stop_x; x++) {
-                for (let y = start_y; y <= stop_y; y++) {
-                    for (let i = 0; i < 5; i++) {
-                        if(_validate_tile(service_endpoint, x, y, z, polygon_gj, layerGroup, progressBar, map, tile_map)) break;
-                    }
-                };
-            };
+            const tiles_in_poly = filter_tiles(northEast,southWest,z,polygon_gj);
+            nvalidate = tiles_in_poly.length;
+            if(nvalidate === 0) return layerGroup;
+            update_freq = Math.ceil(nvalidate/100);
+            nupdates = Math.floor(nvalidate/update_freq);
+            console.log(`There were ${nvalidate} tiles in the polygon.`);
+            // need to offload this task to WebWorkers
+            tiles_in_poly.forEach(function(e,i) {
+                _validate_tile(service_endpoint, e[0], e[1], e[2], layerGroup, map, tile_map);
+            });
+            
             return layerGroup;
         }
     };
