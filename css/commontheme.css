@@ -1,6 +1,6 @@
 :root {
     --ctrl-dim: 45px;
-    --ctrl-dim-active: 55px;
+    --ctrl-dim-active: 58px;
 }
 
 body {
@@ -161,6 +161,7 @@ span.psw {
     height: var(--ctrl-dim);
     background-size: var(--ctrl-dim);
     background-color: white;
+    cursor: pointer;
     /* padding: 30px; */
 }
 
@@ -169,6 +170,7 @@ span.psw {
     height: var(--ctrl-dim-active);
     background-size: var(--ctrl-dim-active);
     background-color: white;
+    cursor: pointer;
 }
 
 /* To work around this issue (Firefox-specific?)

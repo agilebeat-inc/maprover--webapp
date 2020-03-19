@@ -14,6 +14,15 @@ var tileAlgebra = (function () {
         let n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
         return (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
     };
+    
+    let _long2tile = function (lon, zoom) {
+        return (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
+    }
+
+    let _lat2tile = function (lat, zoom) {
+        const rads = lat * Math.PI / 180, zscl = 2 << (zoom-2); // Math.pow(2,zoom)/2;
+        return Math.floor(zscl * (1 - Math.log(Math.tan(rads) + 1 / Math.cos(rads)) / Math.PI));
+    }
 
     let _get_as_rectangle = function (x, y, z) {
         const nz = parseFloat(z), nx = parseFloat(x), ny = parseFloat(y);
@@ -24,14 +33,6 @@ var tileAlgebra = (function () {
         return L.rectangle([[nw_lat, nw_long], [se_lat, se_long]]);
     }
 
-    let _long2tile = function (lon, zoom) {
-        return (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
-    }
-
-    let _lat2tile = function (lat, zoom) {
-        const deg = lat * Math.PI / 180;
-        return  Math.pow(2, zoom) * Math.floor((1 - Math.log(Math.tan(deg) + 1 / Math.cos(deg)) / Math.PI) / 2);
-    }
 
     let _handle_progress_bar = function(progressBar) {
         let cp = Math.round(100 * current_progress / max);
@@ -44,7 +45,9 @@ var tileAlgebra = (function () {
             .css("width", `${cp}%`)
             .attr("aria-valuenow", cp)
             .text(`${cp}% complete`);
-    };
+    }
+
+    let increase_counter = function(){return;}
 
     let _mark_xyz_tile = function(x, y, z, tile_map) {
         if (typeof tile_map.get(z) === 'undefined')
@@ -78,11 +81,9 @@ var tileAlgebra = (function () {
         coords.forEach(cc => _add_rectangle(cc[0],cc[1],z,layerGroup,tile_map));
     }
 
-    let _validate_tile = function (service_endpoint, x, y, z, layerGroup, tile_map) {
+    let validate_tile = function (service_endpoint, x, y, z, layerGroup, tile_map) {
         
-        // do we need to specify a size? This way, the default is zero
-        downloadedImg = new Image;
-
+        // defined here for the closure - would it be better to define it outside and pass in args (x/y/z/)
         _onload = function () {
             let canvas = document.createElement("canvas");
             let context = canvas.getContext("2d");
@@ -90,6 +91,7 @@ var tileAlgebra = (function () {
             canvas.width = this.width;
             canvas.height = this.height;
             context.drawImage(this, 0, 0);
+
             let dataURL = canvas.toDataURL("image/png");
             let tileB64 = dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
             let body_json = {
@@ -111,11 +113,19 @@ var tileAlgebra = (function () {
             xhr_eval.onloadend = increase_counter;
             xhr_eval.send(JSON.stringify(body_json));
         };
+
         
+        _onerror = function() {
+            success = false;
+            current_progress++;
+        }
+        
+        let success = true;
+        // the dimensions are specified in the _onload callback
+        downloadedImg = new Image;
         downloadedImg.crossOrigin = "Anonymous";
         downloadedImg.addEventListener("load", _onload, false);
-        let success = true;
-        downloadedImg.addEventListener("error", function () {success = false; current_progress++;}, false);
+        downloadedImg.addEventListener("error", _onerror, false);
         downloadedImg.addEventListener("timeout", function () { current_progress++; }, false);
         let servers = 'abc';
         let server_str = servers[Math.floor(Math.random() * servers.length)];
@@ -125,6 +135,10 @@ var tileAlgebra = (function () {
         return success;
     };
 
+    val_tile = function(x,y,z,){}
+
+    let resultset = new Set();
+
     // given the polygon geoJSON, figure out which tiles are within the polygon
     // this may benefit from rewriting - we start with coords, convert to tile indices,
     // then convert each index tuple BACK to coords
@@ -132,16 +146,18 @@ var tileAlgebra = (function () {
     // to AWS, then perhaps we just do this in the main thread and just offload the validation
     let filter_tiles = function(NE,SW,z,polygon_gj) {
         const polygon_tf = turf.polygon(polygon_gj.geometry.coordinates);
+        let start_x = _long2tile(SW.lng, z);
         let stop_x  = _long2tile(NE.lng, z);
         let start_y = _lat2tile(NE.lat, z);
-        let start_x = _long2tile(SW.lng, z);
         let stop_y  = _lat2tile(SW.lat, z);
+        console.log(`Running from x: ${start_x} - ${stop_x} and y: ${start_y} - ${stop_y}`);
+        console.log(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
         res = [];
         for (let x = start_x; x <= stop_x; x++) {
             for (let y = start_y; y <= stop_y; y++) {
                 let rect = _get_as_rectangle(x, y, z);
                 let rect_tf = turf.polygon(rect.toGeoJSON().geometry.coordinates);
-                if (turf.booleanContains(polygon_tf, rect_tf)) {    
+                if (turf.booleanContains(polygon_tf, rect_tf)) {
                     res.push([x,y,z]);
                 }
             }
@@ -149,25 +165,32 @@ var tileAlgebra = (function () {
         return res;
     }
 
-    return {
+    // a Javascript 'namespace'
+    TF = {
         bbox_coverage: function (service_endpoint, northEast, southWest, z, polygon_gj, map) {
             
-            let layerGroup = L.layerGroup([]);
-            let tile_map = new Map();
+            resultset.clear(); // empty previous results
             const tiles_in_poly = filter_tiles(northEast,southWest,z,polygon_gj);
-            nvalidate = tiles_in_poly.length;
-            if(nvalidate === 0) return layerGroup;
-            update_freq = Math.ceil(nvalidate/100);
-            nupdates = Math.floor(nvalidate/update_freq);
+            let nvalidate = tiles_in_poly.length;
             console.log(`There were ${nvalidate} tiles in the polygon.`);
-            // need to offload this task to WebWorkers
+            if(nvalidate === 0) return layerGroup;
+            let layerGroup = L.layerGroup([]);
+            let update_freq = Math.ceil(nvalidate/100);
+            let nupdates = Math.floor(nvalidate/update_freq);
+            let tile_map = new Map();
+            // need to offload this task to WebWorkers?
             tiles_in_poly.forEach(function(e,i) {
-                _validate_tile(service_endpoint, e[0], e[1], e[2], layerGroup, map, tile_map);
+                // validate_tile(service_endpoint, e[0], e[1], e[2], layerGroup, map, tile_map);
+                val_tile(e[0],e[1],e[2]);
             });
             
             return layerGroup;
-        }
-    };
+        },
+        // expose some more of the internal functions for testing/development
+        validate_tile: validate_tile,
+        as_rect: _get_as_rectangle
+    }
+    return TF;
 })();
 
 
