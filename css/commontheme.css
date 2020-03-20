@@ -162,7 +162,10 @@ span.psw {
     background-size: var(--ctrl-dim);
     background-color: white;
     cursor: pointer;
-    /* padding: 30px; */
+}
+
+.mapctrl:hover {
+    border-color: rgba(0, 0, 0, 0.6);
 }
 
 .mapctrl-active {
@@ -170,6 +173,8 @@ span.psw {
     height: var(--ctrl-dim-active);
     background-size: var(--ctrl-dim-active);
     background-color: white;
+    /* attempt to override leaflet-bar */
+    border: 2px solid #3f3f3f !important; /* JEEZ JUST LET US DO IT */
     cursor: pointer;
 }
 
@@ -178,3 +183,27 @@ span.psw {
  * we can consider using 
  * .leaflet-fade-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-zoom-animated { will-change:auto !important; }
  */
+
+ /* TOOLTIP TIME! */
+ /* see https://stackoverflow.com/questions/7117073/add-a-tooltip-to-a-div */
+ [data-tooltip]:before {            
+    position : absolute;
+    right: 100%;
+    top: 10%;
+    content : attr(data-tooltip);
+    opacity : 0;
+    font-size: 1.5rem;
+    /* background-color: plum; */
+    background-color: rgba(221, 160, 221, 0.67);
+    border: 2px solid purple;
+    border-radius: 5px;
+    padding: 3px;
+    margin-right: 5px;
+    width: max-content;
+    color: #4d0099;
+    font-weight: 700;
+}
+
+[data-tooltip]:hover:before {        
+    opacity : 1;
+}

@@ -59,6 +59,7 @@ var RailControl =  L.Control.extend({
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/railroad-icon.png)";
+        this.container.setAttribute('data-tooltip','Railroads');
         this.container.id = 'railroad_filter';
         this.container.onclick = function() {
             button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
@@ -87,6 +88,7 @@ var AirfieldControl =  L.Control.extend({
     onAdd: function (map) {
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/jet-icon.png)";
+        this.container.setAttribute('data-tooltip','Airfields');
         this.container.id = 'airfield_filter';
         this.container.onclick = function() {
             button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
@@ -121,6 +123,7 @@ var TweetControl =  L.Control.extend({
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/tweet-icon.png)";
+        this.container.setAttribute('data-tooltip','Tweets');
         this.container.id = 'tweet_filter';
 
         this.container.onclick = function(){
@@ -168,6 +171,7 @@ var locationControl =  L.Control.extend({
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/location-icon.png)";
+        this.container.setAttribute('data-tooltip','Tour!');
         this.container.clickCounter = 0;
         this.container.onclick = function() {
             
@@ -210,6 +214,7 @@ var FilterTweetControl =  L.Control.extend({
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/filter-icon.png)";
+        this.container.setAttribute('data-tooltip','Filter tweets');
         
         this.container.onclick = function() {
 
@@ -258,7 +263,7 @@ var docuGuide =  L.Control.extend({
     onAdd: function (map) {
         var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         container.style.backgroundImage = "url(images/help7.png)";
-        container.style.cursor = 'pointer'; // perhaps this should apply to all mapctrl items?
+        container.setAttribute('data-tooltip','Open Help');
         container.onclick = function() { window.open("guide.html");}
         return container;
     }
@@ -274,6 +279,7 @@ var exportControl =  L.Control.extend({
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/export.png)";
+        this.container.setAttribute('data-tooltip','Export');
 
         this.container.onclick = function() {
             const options = {
@@ -327,8 +333,14 @@ button_mutex = function(id,onclass,offclass) {
     if(ix >= 0) {
         _mutex_group.forEach((elem,i) => {
             let is_active = i === ix;
-            document.getElementById(elem).className = is_active ? onclass : offclass;
-            document.getElementById(elem).setAttribute('data-active',is_active ? 'active' : 'inactive');
+            let curr_class = document.getElementById(elem).className;
+            if(is_active && curr_class === onclass) { // clicked on the currently active class - turn it back off
+                document.getElementById(elem).className = offclass;
+                document.getElementById(elem).setAttribute('data-active','inactive');    
+            } else {
+                document.getElementById(elem).className = is_active ? onclass : offclass;
+                document.getElementById(elem).setAttribute('data-active',is_active ? 'active' : 'inactive');
+            }
         });
     }
 }
