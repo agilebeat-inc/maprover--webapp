@@ -20,15 +20,6 @@ var layer = L.tileLayer(
     crossOrigin: true
 });
 
-// a and b are the two classes we toggle between whenever this function is fired
-// returns the new active class
-function classToggler(elem,a,b) {
-    let currClass = elem.className;
-    let newClass = currClass === a ? b : a;
-    elem.className = newClass;
-    return newClass;
-}
-
 // locations where tweet tags are placed
 var selectionList = [];
 
@@ -66,55 +57,44 @@ var RailControl =  L.Control.extend({
         }
         /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
-
+        /* Prevent scroll events propagation to map when cursor on the div */
+        L.DomEvent.disableScrollPropagation(this.container);
         /* Prevent right click event propagation to map */
         L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev)
         });
 
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
-
         return this.container;
     },
     getContainer: function () {
         return this.container;
-    },
+    }
 });
 
 var AirfieldControl =  L.Control.extend({
 
     container: null,
     onAdd: function (map) {
+
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
         this.container.style.backgroundImage = "url(images/jet-icon.png)";
         this.container.setAttribute('data-tooltip','Airfields');
         this.container.id = 'airfield_filter';
         this.container.onclick = function() {
             button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
-            // let nc = classToggler(this,'leaflet-bar leaflet-control mapctrl','leaflet-bar leaflet-control mapctrl-active');
-            // this.setAttribute('data-active',nc.includes('mapctrl-active') ? 'active' : 'inactive');
         }
-        /* Prevent click events propagation to map */
-        L.DomEvent.disableClickPropagation(this.container);
 
-        /* Prevent right click event propagation to map */
-        L.DomEvent.on(this.container, 'contextmenu', function (ev)
-        {
+        L.DomEvent.disableClickPropagation(this.container);
+        L.DomEvent.disableScrollPropagation(this.container);
+        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
-
-        // for (var event in this.options.events) {
-        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        // }
         return this.container;
     },
     getContainer: function () {
         return this.container;
-    },
+    }
 });
 
 var TweetControl =  L.Control.extend({
@@ -150,16 +130,11 @@ var TweetControl =  L.Control.extend({
             xhr_eval.send(JSON.stringify(combineGeoJSON));
         }
 
-        /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
-
-        /* Prevent right click event propagation to map */
+        L.DomEvent.disableScrollPropagation(this.container);
         L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
-
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
 
         return this.container;
     }
@@ -190,16 +165,12 @@ var locationControl =  L.Control.extend({
             const trip = locs[this.clickCounter];
             map.setView([trip[0],trip[1]],trip[2]);
         }
-        /* Prevent click events propagation to map */
-        L.DomEvent.disableClickPropagation(this.container);
 
-        /* Prevent right click event propagation to map */
+        L.DomEvent.disableClickPropagation(this.container);
+        L.DomEvent.disableScrollPropagation(this.container);
         L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
-
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
 
         return this.container;
     },
@@ -236,20 +207,12 @@ var FilterTweetControl =  L.Control.extend({
             }
         }
 
-        /* Prevent click events propagation to map */
-        L.DomEvent.disableClickPropagation(this.container);
-
-        /* Prevent right click event propagation to map */
+        L.DomEvent.disableClickPropagation(this.container);        
+        L.DomEvent.disableScrollPropagation(this.container);
         L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
 
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
-
-        // for (var event in this.options.events) {
-        //     L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-        // }
         return this.container;
     }
 });
@@ -260,13 +223,16 @@ var docuGuide =  L.Control.extend({
         position: 'bottomright'
     },
 
-    onAdd: function (map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
-        container.style.backgroundImage = "url(images/help7.png)";
-        container.setAttribute('data-tooltip','Open Help');
-        container.onclick = function() { window.open("guide.html");}
-        return container;
+    onAdd: function () {
+        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
+        this.container.style.backgroundImage = "url(images/help7.png)";
+        this.container.setAttribute('data-tooltip','Open Help');
+        this.container.onclick = function() { window.open("guide.html"); }
+        L.DomEvent.disableClickPropagation(this.container);
+        L.DomEvent.disableScrollPropagation(this.container);
+        return this.container;
     }
+
 });
 
 var exportControl =  L.Control.extend({
@@ -296,16 +262,11 @@ var exportControl =  L.Control.extend({
             }
         }
 
-        /* Prevent click events propagation to map */
         L.DomEvent.disableClickPropagation(this.container);
-
-        /* Prevent right click event propagation to map */
+        L.DomEvent.disableScrollPropagation(this.container);
         L.DomEvent.on(this.container, 'contextmenu', function (ev) {
             L.DomEvent.stopPropagation(ev);
         });
-
-        /* Prevent scroll events propagation to map when cursor on the div */
-        L.DomEvent.disableScrollPropagation(this.container);
 
         return this.container;
     }
@@ -323,9 +284,10 @@ map.addControl(new docuGuide());
 map.addControl(new locationControl());
 map.addControl(export_control);
 
-layer.addTo(map);
+layer.addTo(map); // by default, the controls have higher z-axis
 
 const _mutex_group = ['railroad_filter','airfield_filter','tweet_filter'];
+
 // mutex for the buttons that can toggle
 // this should be added as a 'click' event callback for the buttons in the mutex group
 button_mutex = function(id,onclass,offclass) {
@@ -352,9 +314,9 @@ const drawing_options = {
     position: 'topleft',
     draw: {
         polygon: {
-            allowIntersection: false, // Restricts shapes to simple polygons
+            allowIntersection: false,
             drawError: {
-                color: '#e1e100', // Color the shape will turn when intersects
+                color: '#ef8321', // Color the shape will turn when intersects
                 message: "<strong>Error:<strong> boundary can't intersect itself!" // Message that will show when intersect
             }
         },
@@ -365,17 +327,17 @@ const drawing_options = {
         marker: false
     },
     edit: {
-        featureGroup: editableLayers, //REQUIRED!!
-        remove: true
+        featureGroup: editableLayers,
+        remove: false
     }
 };
 
 const drawControl = new L.Control.Draw(drawing_options);
 map.addControl(drawControl);
 
-map.on(L.Draw.Event.CREATED, function(e) {
+map.on(L.Draw.Event.CREATED, async function(e) {
 
-    console.log("now an event was created!");
+    // console.log("now an event was created!");
     let progressBar = L.control.custom({
         position: 'bottomleft',
         content : 
@@ -388,7 +350,7 @@ map.on(L.Draw.Event.CREATED, function(e) {
         '    </div>'+
         '</div>',
         classes: 'panel panel-default', // by default 'leaflet-control' is also one of the classes
-        style: { // superflous? we should define these properties in a CSS class and just include that in 'classes' arg
+        style: { // overriding the default Bootstrap styles
             width: '200px',
             margin: '20px',
             padding: '0px',
@@ -396,31 +358,36 @@ map.on(L.Draw.Event.CREATED, function(e) {
     });
 
     const zoom_lvl = Math.min(this.getZoom() + 5,19);
-    console.log(`The zoom in use is ${zoom_lvl}`);
-    console.log(`Event layer type: ${e.layerType}`);
-    console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
-    let layerGroup, endpoint;
+    // console.log(`The zoom in use is ${zoom_lvl}`);
+    // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
+    let endpoint, category = '';
     // needs refactoring to generalize to different types of tiles
     if (e.layerType === 'polygon') {
         if (rail_control.getContainer().getAttribute('data-active') === 'active') {
             console.log(`Searching for rail tiles!`);
+            category = 'rail';
             endpoint = 'https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer';
         } else if (airfield_control.getContainer().getAttribute('data-active') === 'active') {
             console.log(`Searching for airfield tiles!`);
+            category = 'airfield';
             endpoint = 'https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer';
         } else {
+            console.warn(`No button active; polygon has no effect.`);
             return;
         }
-        progressBar.addTo(this);
-        layerGroup = tileAlgebra.bbox_coverage(
+        progressBar.addTo(this); // should pass a reference to the map and let callback handle defining progress bar?
+        
+        let layerGroup = await tileAlgebra.bbox_coverage(
             endpoint,
+            category,
             e.layer._bounds._northEast,
             e.layer._bounds._southWest,
             zoom_lvl,
-            layer.toGeoJSON(),
-            progressBar
+            e.layer.toGeoJSON()
         );
         layerGroup.addTo(this);
         selectionList.push(layerGroup);
-    };
+        // remove progress bar to clean up
+        progressBar.remove();
+    }
 });

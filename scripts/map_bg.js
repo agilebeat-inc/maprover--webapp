@@ -1,3 +1,4 @@
+"use strict";
 // background map settings for sign-in, register, and verify pages
 // in proper ES-6 we would have import L from leaflet - in practice we assume that
 // leafet.js has been imported already so that the global L var is defined
