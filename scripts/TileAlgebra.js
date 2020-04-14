@@ -1,5 +1,37 @@
 "use strict";
 
+class progress_tracker {
+    // eid: id of element in document that needs updating
+    // nsteps: number of total steps
+    constructor(eid,nsteps) {
+        this._id = eid;
+        this._nsteps = nsteps;
+        this._status = 0;
+        this.update_display();
+    }
+    get status() { return this._status; }
+    get length() { return this._nsteps; }
+
+    // this is inherently specific to what we're using (here, Bootstrap) for the progress bar
+    update_display() {
+        const outPct = Math.round(100 * Math.min(this._nsteps,this._status) / this._nsteps);
+        // need to keep width style attribute and 'aria-valuenow' tag attribute in sync
+        let pbar = document.getElementById(this._id);
+        pbar.style.width = `${outPct}%`;
+        pbar.setAttribute('aria-valuenow',outPct);
+        pbar.innerHTML = outPct >= 100 ? 'Complete!' : `${outPct}%`;
+    }
+    update(k) {
+        this._status = k;
+        this.update_display();
+    }
+    increment() {
+        this._status++;
+        this.update_display();
+    }
+
+}
+
 var tileAlgebra = (function () {
 
     // https://en.wikipedia.org/wiki/Web_Mercator_projection
@@ -30,7 +62,7 @@ var tileAlgebra = (function () {
     }
 
     // return a leaflet rectangle which will get added to the map (as part of a LayerGroup)
-    let _get_as_rectangle = function (x, y, z) {
+    let get_as_rectangle = function (x, y, z, options = {color: '#3388dd',opacity: 0.8}) {
 
         let nw_long = tile2long(x, z);
         let nw_lat = tile2lat(y, z);
@@ -38,9 +70,7 @@ var tileAlgebra = (function () {
         let se_long = nw_long + 360 / (2<<z-1);
         let se_lat = tile2lat(y + 1, z);
         if([nw_long,nw_lat,se_long,se_lat].some(e => isNaN(e))) console.error(`Inputs x=${x}, y=${y}, z=${z} gave error!`);
-        let rv = L.rectangle([[nw_lat, nw_long], [se_lat, se_long]],{color: '#3388dd',opacity: 0.8});
-        // add any desired options now or later, e.g. a tooltip with predicted probability...or opacity proportional to prob.?
-        return rv;
+        return L.rectangle([[nw_lat, nw_long], [se_lat, se_long]],options);
     }
 
     // get the dataURL representation of a (loaded!) image
@@ -85,7 +115,7 @@ var tileAlgebra = (function () {
             tile_base64: tileB64
         };
         // placeholder:
-        let res = tileB64.length % 8; // lengths are ALL even for some reason!
+        let res = tileB64.length % 8; // lengths are all even since b64 encodes in groups of 6 bytes?
         return res === 0;
         // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
         const response = await fetch(service_endpoint, {
@@ -130,7 +160,7 @@ var tileAlgebra = (function () {
         // this is the naive and slow way, but we cannot assume the polygon is convex!
         for (let x = start_x; x <= stop_x; x++) {
             for (let y = start_y; y <= stop_y; y++) {
-                let rect = _get_as_rectangle(x, y, z);
+                let rect = get_as_rectangle(x, y, z, {});
                 let rect_tf = turf.polygon(rect.toGeoJSON().geometry.coordinates);
                 if (tile_in_poly(polygon_tf, rect_tf)) { 
                     res.push([x,y,z]);
@@ -147,27 +177,59 @@ var tileAlgebra = (function () {
     }
 
     let tile_validator = async function (service_endpoint, category, northEast, southWest, z, polygon_gj) {
-            
+        
         const tiles_in_poly = filter_tiles(northEast,southWest,z,polygon_gj);
         let nvalidate = tiles_in_poly.length;
         
         if(nvalidate === 0) return layerGroup;
-        // let update_freq = Math.ceil(nvalidate/100);
-        // let nupdates = Math.floor(nvalidate/update_freq);
-        let layerGroup = L.layerGroup([]);
-        
+
+        // will need to assign it a unique ID since there can be multiple progress bars
+        let barID = 'dynamic';
+        const bar_class = "progress-bar progress-bar-striped active";
+        let progressBar = L.control.custom({
+            position: 'bottomleft',
+            content : 
+            '<div class="panel-body">'+
+            '    <div class="progress" style="margin-bottom:0px;">' +
+            `        <div id="${barID}" class="${bar_class}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 0%">` +
+            '            0% Completed' +
+            '       </div>' +
+            '   </div>' +
+            '</div>',
+            classes: 'panel panel-default', // by default 'leaflet-control' also becomes one of the classes
+            style: { // overriding the default Bootstrap styles
+                width: '200px',
+                margin: '20px',
+                padding: '0px',
+            },
+        });
+        progressBar.addTo(map);
+        let prog_trak = new progress_tracker('dynamic',nvalidate);
+        // https://leafletjs.com/examples/map-panes/
+        // as a side-effect createPane automatically inserts into the map and creates a classname based on the name [...]Pane
+        let tPane = map.createPane('tempPane');
+        map.getPane('tempPane').style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
+        let search_layer = L.layerGroup([],{pane: 'overlayPane'}); // this is the 'permanent' return value
+
         // need to offload this task to WebWorkers?
         // let resultset = new Set();
         let include_neighbors = false;
-        // need to refactor: don't wait till end to load tiles onto map
         let validated_tiles = tiles_in_poly.map(e => {
             return new Promise((resolve,reject) => {
                 try {
                     let res = validate_tile(service_endpoint,category,...e)
-                    .then(
-                        // update progress bar here!
+                    .then( rv => {
                         // if we append to map, can we also track the items as a LayerGroup?
-                        rv => { return {coords: e, valid: rv} });
+                        // update progress bar
+                        prog_trak.increment();
+                        // create the temp copy with pane specified in options:
+                        // console.log(`rv = ${rv}`);
+                        if(rv) {
+                            let tmpRect = get_as_rectangle(...e,{pane: 'tempPane',color: '#3388dd',opacity: 0.6});
+                            tmpRect.addTo(map);
+                        }
+                        return {coords: e, valid: rv} 
+                    });
                     resolve(res);
                 }
                 catch(e) {
@@ -185,12 +247,17 @@ var tileAlgebra = (function () {
             console.info(`There are ${tiles.length} tiles to add to the map!`);
             // tiles.forEach(e => resultset.add(e));
             tiles.forEach(e => {
-                let rect = _get_as_rectangle(...e.coords);
+                let rect = get_as_rectangle(...e.coords);
                 // any other rect options, etc. may be set
-                layerGroup.addLayer(rect);
+                search_layer.addLayer(rect);
             });
         });
-        return layerGroup;
+        // remove progress bar to clean up
+        progressBar.remove();
+        // remove temp pane and add search_layer (hoping user cannot see in between!)
+        map.getPane('tempPane').remove();
+        search_layer.addTo(map);
+        return search_layer;
     }
 
     // a Javascript 'namespace'
@@ -200,7 +267,7 @@ var tileAlgebra = (function () {
         bbox_coverage: tile_validator,
         // expose some more of the internal functions for testing/development
         validate_tile: validate_tile,
-        as_rect: _get_as_rectangle
+        as_rect: get_as_rectangle
     }
     return TF;
 })();

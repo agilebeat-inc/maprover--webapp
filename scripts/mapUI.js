@@ -337,25 +337,13 @@ map.addControl(drawControl);
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
+    // idea: create a temporary pane for each search
+    // so that tiles can be populated to the pane immediately upon validation
+    // then, once the whole search is complete we can delete that pane and re-add
+    // the whole result set to the default pane ('overlayPane')
+    // https://leafletjs.com/reference-1.6.0.html#layer
     // console.log("now an event was created!");
-    let progressBar = L.control.custom({
-        position: 'bottomleft',
-        content : 
-        '<div class="panel-body">'+
-        '    <div class="progress" style="margin-bottom:0px;">'+
-        '        <div id="dynamic" class="progress-bar progress-bar-striped passive" role="progressbar" aria-valuenow="41" '+
-        '             aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 0%">'+
-        '            0% Completed'+
-        '        </div>'+
-        '    </div>'+
-        '</div>',
-        classes: 'panel panel-default', // by default 'leaflet-control' is also one of the classes
-        style: { // overriding the default Bootstrap styles
-            width: '200px',
-            margin: '20px',
-            padding: '0px',
-        },
-    });
+    
 
     const zoom_lvl = Math.min(this.getZoom() + 5,19);
     // console.log(`The zoom in use is ${zoom_lvl}`);
@@ -375,7 +363,7 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             console.warn(`No button active; polygon has no effect.`);
             return;
         }
-        progressBar.addTo(this); // should pass a reference to the map and let callback handle defining progress bar?
+        
         
         let layerGroup = await tileAlgebra.bbox_coverage(
             endpoint,
@@ -385,9 +373,6 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             zoom_lvl,
             e.layer.toGeoJSON()
         );
-        layerGroup.addTo(this);
-        selectionList.push(layerGroup);
-        // remove progress bar to clean up
-        progressBar.remove();
+        selectionList.push(layerGroup); // tracking all the searches not cleared
     }
 });
