@@ -29,7 +29,22 @@ class progress_tracker {
         this._status++;
         this.update_display();
     }
+}
 
+class query_control {
+    constructor(queryID,category,color) {
+        this._id = queryID;
+        this._category = category;
+        this._color = color;
+        // create the control div and add to map
+    }
+    hide() {
+        // remove tile layer from map but keep it in selection list
+    }
+    destroy() {
+        // remove tile layer from map and selection list
+        // remove control div
+    }
 }
 
 var tileAlgebra = (function () {
@@ -176,23 +191,24 @@ var tileAlgebra = (function () {
         return [...new Set(x)];
     }
 
-    let tile_validator = async function (service_endpoint, category, northEast, southWest, z, polygon_gj) {
+    let tile_validator = async function (service_endpoint, category, northEast, southWest, z, color, id, polygon_gj) {
         
         const tiles_in_poly = filter_tiles(northEast,southWest,z,polygon_gj);
         let nvalidate = tiles_in_poly.length;
         
-        if(nvalidate === 0) return layerGroup;
+        if(nvalidate === 0) return null;
 
         // will need to assign it a unique ID since there can be multiple progress bars
-        let barID = 'dynamic';
+        let barID = `prog_${id}`;
         const bar_class = "progress-bar progress-bar-striped active";
+        const bar_style = `style="min-width: 1em; width: 0%; color: ${color}"`;
         let progressBar = L.control.custom({
             position: 'bottomleft',
             content : 
             '<div class="panel-body">'+
             '    <div class="progress" style="margin-bottom:0px;">' +
-            `        <div id="${barID}" class="${bar_class}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 0%">` +
-            '            0% Completed' +
+            `        <div id="${barID}" class="${bar_class}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" ${bar_style}>` +
+                '0%' +
             '       </div>' +
             '   </div>' +
             '</div>',
@@ -204,7 +220,7 @@ var tileAlgebra = (function () {
             },
         });
         progressBar.addTo(map);
-        let prog_trak = new progress_tracker('dynamic',nvalidate);
+        let prog_trak = new progress_tracker(barID,nvalidate);
         // https://leafletjs.com/examples/map-panes/
         // as a side-effect createPane automatically inserts into the map and creates a classname based on the name [...]Pane
         let tPane = map.createPane('tempPane');
@@ -225,7 +241,7 @@ var tileAlgebra = (function () {
                         // create the temp copy with pane specified in options:
                         // console.log(`rv = ${rv}`);
                         if(rv) {
-                            let tmpRect = get_as_rectangle(...e,{pane: 'tempPane',color: '#3388dd',opacity: 0.6});
+                            let tmpRect = get_as_rectangle(...e,{pane: 'tempPane',color: color,opacity: 0.6});
                             tmpRect.addTo(map);
                         }
                         return {coords: e, valid: rv} 
@@ -245,15 +261,17 @@ var tileAlgebra = (function () {
             console.log(`Before filtering: ${num_pos} positive and ${tiles.length - num_pos} negative tiles`);
             tiles = tiles.filter(e => e.valid);
             console.info(`There are ${tiles.length} tiles to add to the map!`);
-            // tiles.forEach(e => resultset.add(e));
             tiles.forEach(e => {
-                let rect = get_as_rectangle(...e.coords);
+                let rect = get_as_rectangle(...e.coords,{color: color, opacity: 0.75});
+                rect.bindTooltip('Hi there!');
                 // any other rect options, etc. may be set
                 search_layer.addLayer(rect);
             });
         });
         // remove progress bar to clean up
         progressBar.remove();
+        // TODO: add a div in its place which controls dismissing this query set:
+
         // remove temp pane and add search_layer (hoping user cannot see in between!)
         map.getPane('tempPane').remove();
         search_layer.addTo(map);

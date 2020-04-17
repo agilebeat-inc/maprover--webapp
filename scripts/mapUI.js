@@ -15,12 +15,13 @@ var layer = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     minZoom: 0,
     maxZoom: 19,
-    attribution: `Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>Powerd by © <a href="https://www.agilebeat.com">Agilebeat Inc.</a>`,
-    id: 'examples.map-i875mjb7',
+    attribution: `Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>Powered by © <a href="https://www.agilebeat.com">Agilebeat Inc.</a>`,
+    id: 'main_tiles',
     crossOrigin: true
 });
 
-// locations where tweet tags are placed
+var num_queries = 0;
+// container for the currently displayed searches
 var selectionList = [];
 
 // helper function that combines the selected features' geoJSON representations into a flat array
@@ -34,24 +35,26 @@ function flatten_geoJSON() {
     };
 }
 
-category_button = function(options) {
-    _container = null;
-    const usr_keys = options.keys();
-    let getif = function(k){ return k in usr_keys ? options[k] : null}
-    on_add = function(map) {
-        _container = L.DomUtil.create('div','');
-    }
+// colors for tiles associated with given categories
+// https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
+// TODO: sync this with category names - right now they both 'happen' to be hard-coded with the same names
+const _palette = {
+    rail: '#1b9e77',
+    airfield: '#d95f02',
+    item3: '#7570b3',
+    item4: '#e7298a',
+    item5: '#66a61e',
+    item6: '#e6ab02',
+    item7: '#a6761d'
 }
 
-var RailControl =  L.Control.extend({
+mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
 
-    container: null,
-    onAdd: function (map) {
-
+    let addFunc = add_callback === null ? function(map) {
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
-        this.container.style.backgroundImage = "url(images/railroad-icon.png)";
-        this.container.setAttribute('data-tooltip','Railroads');
-        this.container.id = 'railroad_filter';
+        this.container.style.backgroundImage = `url(${bgURI})`;
+        this.container.setAttribute('data-tooltip',display_name);
+        this.container.id = `${category_name}_filter`;
         this.container.onclick = function() {
             button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
         }
@@ -65,39 +68,20 @@ var RailControl =  L.Control.extend({
         });
 
         return this.container;
-    },
-    getContainer: function () {
-        return this.container;
-    }
-});
-
-var AirfieldControl =  L.Control.extend({
-
-    container: null,
-    onAdd: function (map) {
-
-        this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
-        this.container.style.backgroundImage = "url(images/jet-icon.png)";
-        this.container.setAttribute('data-tooltip','Airfields');
-        this.container.id = 'airfield_filter';
-        this.container.onclick = function() {
-            button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
+    } : add_callback;
+    let rv = {
+        onAdd: addFunc,
+        getContainer: function () {
+            return this.container;
         }
-
-        L.DomEvent.disableClickPropagation(this.container);
-        L.DomEvent.disableScrollPropagation(this.container);
-        L.DomEvent.on(this.container, 'contextmenu', function (ev) {
-            L.DomEvent.stopPropagation(ev);
-        });
-
-        return this.container;
-    },
-    getContainer: function () {
-        return this.container;
     }
-});
+    return L.Control.extend(rv);
+}
 
-var TweetControl =  L.Control.extend({
+const RailControl = mutex_button("images/railroad-icon.png",'railroad','Railroads');
+const AirfieldControl = mutex_button("images/jet-icon.png",'airfield','Airfields');
+
+var TweetControl = L.Control.extend({
 
     onAdd: function (map) {
 
@@ -106,7 +90,7 @@ var TweetControl =  L.Control.extend({
         this.container.setAttribute('data-tooltip','Tweets');
         this.container.id = 'tweet_filter';
 
-        this.container.onclick = function(){
+        this.container.onclick = function() {
 
             button_mutex(this.id,'leaflet-bar leaflet-control mapctrl-active','leaflet-bar leaflet-control mapctrl');
 
@@ -140,7 +124,7 @@ var TweetControl =  L.Control.extend({
     }
 });
 
-var locationControl =  L.Control.extend({
+var locationControl = L.Control.extend({
 
     onAdd: function (map) {
 
@@ -157,8 +141,8 @@ var locationControl =  L.Control.extend({
                 [34.568889, 36.572778, 13], // Al-Qusayr Military Airbase
                 [35.732778, 37.101667, 13], // Abu al-Duhur Military Airbase
                 [35.400833, 35.948611, 13], // bassel-al-assad good selection
-                [47.39365919797528, 38.91292367990341, 14], // Mariupol/Rostov on the Black Sea
-                [-37.78333, 175.28333, 11] // Hamilton, NZ
+                [47.393659, 38.912923, 14], // Mariupol/Rostov on the Black Sea
+                [-37.78333, 175.28333, 11]  // Hamilton, NZ
             ];
             this.clickCounter++;
             this.clickCounter %= locs.length;
@@ -337,16 +321,16 @@ map.addControl(drawControl);
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
-    // idea: create a temporary pane for each search
+    // create a temporary pane for each search
     // so that tiles can be populated to the pane immediately upon validation
     // then, once the whole search is complete we can delete that pane and re-add
     // the whole result set to the default pane ('overlayPane')
     // https://leafletjs.com/reference-1.6.0.html#layer
-    // console.log("now an event was created!");
+    
     
 
     const zoom_lvl = Math.min(this.getZoom() + 5,19);
-    // console.log(`The zoom in use is ${zoom_lvl}`);
+    
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     let endpoint, category = '';
     // needs refactoring to generalize to different types of tiles
@@ -363,14 +347,17 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             console.warn(`No button active; polygon has no effect.`);
             return;
         }
-        
-        
+        const layer_color = _palette.hasOwnProperty(category) ? _palette[category] : '#3388dd';
+        num_queries++;
+        const query_id = `query_${num_queries}`;
         let layerGroup = await tileAlgebra.bbox_coverage(
             endpoint,
             category,
             e.layer._bounds._northEast,
             e.layer._bounds._southWest,
             zoom_lvl,
+            layer_color,
+            query_id,
             e.layer.toGeoJSON()
         );
         selectionList.push(layerGroup); // tracking all the searches not cleared
