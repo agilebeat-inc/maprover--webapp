@@ -31,21 +31,6 @@ class progress_tracker {
     }
 }
 
-class query_control {
-    constructor(queryID,category,color) {
-        this._id = queryID;
-        this._category = category;
-        this._color = color;
-        // create the control div and add to map
-    }
-    hide() {
-        // remove tile layer from map but keep it in selection list
-    }
-    destroy() {
-        // remove tile layer from map and selection list
-        // remove control div
-    }
-}
 
 var tileAlgebra = (function () {
 
@@ -130,8 +115,8 @@ var tileAlgebra = (function () {
             tile_base64: tileB64
         };
         // placeholder:
-        let res = tileB64.length % 8; // lengths are all even since b64 encodes in groups of 6 bytes?
-        return res === 0;
+        // let res = tileB64.length % 8; // lengths are all even since b64 encodes in groups of 6 bytes?
+        return Math.random() < 0.33;
         // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
         const response = await fetch(service_endpoint, {
             method: 'GET',
@@ -201,23 +186,23 @@ var tileAlgebra = (function () {
         // will need to assign it a unique ID since there can be multiple progress bars
         let barID = `prog_${id}`;
         const bar_class = "progress-bar progress-bar-striped active";
-        const bar_style = `style="min-width: 1em; width: 0%; color: ${color}"`;
+        const bar_style = `style="min-width: 1em; width: 0%; background-color: ${color}"`;
         let progressBar = L.control.custom({
             position: 'bottomleft',
             content : 
-            '<div class="panel-body">'+
-            '    <div class="progress" style="margin-bottom:0px;">' +
-            `        <div id="${barID}" class="${bar_class}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" ${bar_style}>` +
-                '0%' +
-            '       </div>' +
-            '   </div>' +
-            '</div>',
+            `<div class="panel-body">
+                <div class="progress" style="margin-bottom:0px;">
+                    <div id="${barID}" class="${bar_class}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" ${bar_style}>
+                    '0%'
+                    </div>
+                </div>
+            </div>`,
             classes: 'panel panel-default', // by default 'leaflet-control' also becomes one of the classes
             style: { // overriding the default Bootstrap styles
                 width: '200px',
                 margin: '20px',
                 padding: '0px',
-            },
+            }
         });
         progressBar.addTo(map);
         let prog_trak = new progress_tracker(barID,nvalidate);
@@ -225,7 +210,7 @@ var tileAlgebra = (function () {
         // as a side-effect createPane automatically inserts into the map and creates a classname based on the name [...]Pane
         let tPane = map.createPane('tempPane');
         map.getPane('tempPane').style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
-        let search_layer = L.layerGroup([],{pane: 'overlayPane'}); // this is the 'permanent' return value
+        let search_layer = L.featureGroup([],{pane: 'overlayPane'}); // this is the 'permanent' return value
 
         // need to offload this task to WebWorkers?
         // let resultset = new Set();
@@ -269,12 +254,10 @@ var tileAlgebra = (function () {
             });
         });
         // remove progress bar to clean up
+        map.removeLayer(progressBar);
         progressBar.remove();
-        // TODO: add a div in its place which controls dismissing this query set:
-
         // remove temp pane and add search_layer (hoping user cannot see in between!)
         map.getPane('tempPane').remove();
-        search_layer.addTo(map);
         return search_layer;
     }
 

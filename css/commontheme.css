@@ -43,7 +43,8 @@ input[type=text], input[type=password], input[type=email] {
     box-sizing: border-box;
 }
 
-button {
+/* used in the registration, sign-in page */
+button.fancy {
     background-color: #4b6777;
     color: whitesmoke;
     padding: 16px 10px;
@@ -53,7 +54,8 @@ button {
     width: 80%;
 }
 
-button:hover {
+/* used in the registration, sign-in page */
+button.fancy:hover {
     opacity: 0.8;
 }
 
@@ -155,7 +157,7 @@ span.psw {
     }
 }
 
-/* map control buttons - DRY */
+/* map control buttons */
 .mapctrl {
     width: var(--ctrl-dim);
     height: var(--ctrl-dim);

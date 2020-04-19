@@ -1,8 +1,10 @@
+"use strict";
 // custom UI components for the main Maprover page
 // mostly, this defines the interavtive buttons that are laid on top of the map
 
-// TODO list
+// TODO:
 // [ ] when the screen height is small, the top-right and bottom-right buttons overlap each other
+// [ ] use FeatureGroup rather than LayerGroup for tiles?
 
 var map = L.map('map', {
     minZoom: 0,
@@ -22,16 +24,22 @@ var layer = L.tileLayer(
 
 var num_queries = 0;
 // container for the currently displayed searches
-var selectionList = [];
+// a simple key-value object with queryID as key and the tile layer as value
+var selectionList = {};
+
+function capitalize(x) {
+    return x.split(' ')
+    .map(word => word[0].toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 // helper function that combines the selected features' geoJSON representations into a flat array
 // used in the 'filterTweet' and 'download' controls
 function flatten_geoJSON() {
-    if(selectionList.length === 0) return [];
     return {
         "type" : "FeatureCollection",
         // see https://stackoverflow.com/questions/5080028/what-is-the-most-efficient-way-to-concatenate-n-arrays
-        "features": [].concat.apply([],selectionList.map( item => item.toGeoJSON().features))
+        "features": [].concat.apply([],Object.values(selectionList).map( val => val.toGeoJSON().features))
     };
 }
 
@@ -48,7 +56,7 @@ const _palette = {
     item7: '#a6761d'
 }
 
-mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
+const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
 
     let addFunc = add_callback === null ? function(map) {
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
@@ -173,7 +181,7 @@ var FilterTweetControl =  L.Control.extend({
         
         this.container.onclick = function() {
 
-            if (selectionList.length > 0) {
+            if (Object.keys(selectionList).length > 0) {
 
                 map.removeLayer(this.filtered_tweets);
                 
@@ -240,7 +248,7 @@ var exportControl =  L.Control.extend({
                     line: 'lines'
                 }
             }
-            if (selectionList.length > 0) {
+            if (Object.keys(selectionList).length > 0) {
                 let combinedGeoJSON = flatten_geoJSON();
                 shpwrite.download(combinedGeoJSON, options);
             }
@@ -274,7 +282,7 @@ const _mutex_group = ['railroad_filter','airfield_filter','tweet_filter'];
 
 // mutex for the buttons that can toggle
 // this should be added as a 'click' event callback for the buttons in the mutex group
-button_mutex = function(id,onclass,offclass) {
+const button_mutex = function(id,onclass,offclass) {
     let ix = _mutex_group.indexOf(id);
     if(ix >= 0) {
         _mutex_group.forEach((elem,i) => {
@@ -319,15 +327,85 @@ const drawing_options = {
 const drawControl = new L.Control.Draw(drawing_options);
 map.addControl(drawControl);
 
-map.on(L.Draw.Event.CREATED, async function(e) {
+class query_control {
+    constructor(queryID,category,color,coords) {
+        this._id = queryID;
+        this._category = category;
+        this._color = color;
+        // create the control div and add to map
+        // method 'onclick' should move map to where this search was
+        // TODO: add a little globe or pin icon with click method centering the map on the centroid of query
+        // toggle (material switch) should show/hide
+        // pressing [x] will delete this control and the query tiles
+        const [chkID, spanID, buttonID] = [`${queryID}_toggle`,`${queryID}_pan`,`${queryID}_x`];
+        const ctrlBar = L.control.custom({
+            position: 'bottomleft',
+            content : `<div class="panel-body">
+                        <span class="cboxlab" id="${spanID}">${capitalize(category)}</span>
+                        <input type="checkbox" id="${chkID}" class="cbx hidden"/>
+                        <label for="${chkID}" class="lbl" style="background:${color}">Hide</label>
+                        <button class="dismiss" id="${buttonID}">Remove</button>
+                       </div>`,
+            classes: 'panel panel-default', // by default 'leaflet-control' also becomes one of the classes
+            style: { // overriding the default Bootstrap styles
+                // width: '200px',
+                margin: '16px',
+                padding: '0px'
+            }
+        });
+        this._control = ctrlBar;
+        this._control.addTo(map);
+        // callbacks for the three elements
+        let cbutton = document.getElementById(buttonID);
+        let cspan = document.getElementById(spanID);
+        const bounds = selectionList[queryID].getBounds();
+        // useful: https://stackoverflow.com/questions/16845614/zoom-to-fit-all-markers-in-mapbox-or-leaflet
+        cspan.addEventListener('click',() => {
+            // map.panInsideBounds(bounds);
+            // its kind of dumb to pan to a hidden layer, so always restore it first:
+            cbutton.checked = false;
+            this.restore();
+            map.fitBounds(bounds.pad(0.5));
+        });
+        // ensure the bg is dark enough that light text will contrast well
+        cbutton.style.setProperty('background-color',tinycolor(this._color).darken(25));
+        cbutton.style.setProperty('background-color:hover',tinycolor(this._color).darken(10));
+        cbutton.addEventListener('click',() => this.destroy());
+        
+        document.getElementById(chkID).addEventListener('click',() => {
+            let cbx = document.getElementById(chkID);
+            // console.log(`checked = ${cbx.checked}`);
+            cbx.checked ? this.hide() : this.restore();
+        });
+    }
+    hide() {
+        // remove tile layer from map but keep it in selection list
+        console.log(`checking for ID ${selectionList[this._id]._leaflet_id}`);
+        if(map.hasLayer(selectionList[this._id])) {
+            map.removeLayer(selectionList[this._id]);
+        }
+    }
+    restore() {
+        console.log(`checking for absence of ID ${selectionList[this._id]._leaflet_id}`);
+        if(! map.hasLayer(selectionList[this._id])) {
+            selectionList[this._id].addTo(map);
+        }
+    }
+    destroy() {
+        map.removeLayer(selectionList[this._id]);
+        delete selectionList[this._id];
+        // remove control div from map
+        map.removeControl(this._control);
+        delete queryControls[this._id];
+        // also remove it from the document
+        this._control.remove();
+    }
+}
 
-    // create a temporary pane for each search
-    // so that tiles can be populated to the pane immediately upon validation
-    // then, once the whole search is complete we can delete that pane and re-add
-    // the whole result set to the default pane ('overlayPane')
-    // https://leafletjs.com/reference-1.6.0.html#layer
-    
-    
+// let the control objects survive?
+const queryControls = {};
+
+map.on(L.Draw.Event.CREATED, async function(e) {
 
     const zoom_lvl = Math.min(this.getZoom() + 5,19);
     
@@ -360,6 +438,11 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             query_id,
             e.layer.toGeoJSON()
         );
-        selectionList.push(layerGroup); // tracking all the searches not cleared
+        if(layerGroup.getLayers().length) {
+            layerGroup.addTo(map);
+            selectionList[query_id] = layerGroup; // tracking all the searches not cleared
+            let QC = new query_control(query_id,category,layer_color,0);
+            queryControls[query_id] = QC;
+        }
     }
 });
