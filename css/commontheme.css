@@ -188,7 +188,8 @@ span.psw {
 
  /* TOOLTIP TIME! */
  /* see https://stackoverflow.com/questions/7117073/add-a-tooltip-to-a-div */
- [data-tooltip]:before {            
+ /* TODO: dynamically style the tooltips according to palette color */
+ [data-tooltip]::before {            
     position : absolute;
     right: 100%;
     top: 10%;
@@ -206,6 +207,6 @@ span.psw {
     font-weight: 700;
 }
 
-[data-tooltip]:hover:before {        
+[data-tooltip]:hover::before {        
     opacity : 1;
 }

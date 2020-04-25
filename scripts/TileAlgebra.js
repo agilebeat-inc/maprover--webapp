@@ -119,7 +119,7 @@ var tileAlgebra = (function () {
         return Math.random() < 0.33;
         // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
         const response = await fetch(service_endpoint, {
-            method: 'GET',
+            method: 'POST',
             mode: 'cors',
             cache: 'default',
             credentials: 'same-origin',

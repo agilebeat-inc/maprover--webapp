@@ -1,11 +1,12 @@
 :root {
     --knob-size: 20px;
+    --pill-width: 32px;
 }
 /* material switch themed checkbox */
 .hidden { display: none; }
 
 /* 'background pill-shaped part of switch 
- * also note behavior of border-radius: when just one is supplied
+ * behavior of border-radius: when just one is supplied
  * then it stops rounding off after the smaller of width or height is completely circular
  * so here, all values >= 36px are equivalent
  */
@@ -13,10 +14,10 @@
     position: relative;
     /* display: block; */
     margin: auto; /* horizontally align center */
-    width: 36px;
+    width: var(--pill-width);
+    border-radius: var(--pill-width);
     height: 16px;
     background: #FDAA48;
-    border-radius: 36px;
     cursor: pointer;
     transition: all 0.33s ease;
 }
@@ -29,28 +30,30 @@
  */
 .lbl::after {
     position: absolute;
-    left: -2px;
-    top: -1px;
     display: block;
+    left: -2px;
+    top: -2px;
     width: var(--knob-size);
     height: var(--knob-size);
     border-radius: var(--knob-size);
-    background: #5E3B07;
+    background-color: rgb(131, 128, 124);
     box-shadow: 0px 3px 3px rgba(128,0,38,0.05);
     content: '';
     transition: all 0.33s ease;
 }
 
 /* squish effect */
-.lbl:active::after { transform: scale(1.15, 0.85); }
+.lbl:active::after {
+    transform: scale(1.15, 0.85);
+}
 
 /* ~ is the 'general sibling combinator' so a label following a .cbx:checked 
     which creates the need to put the <label> after the <input>
-*/
+ */
 .cbx:checked ~ label { background: #1FA187; }
 .cbx:checked ~ label::after {
-    left: 20px;
-    background: #3F4889;
+    left: calc(var(--pill-width) + 2px - var(--knob-size));
+    background-color: #5E3B07;
 }
 
 .cbx:disabled ~ label {
@@ -75,12 +78,22 @@
 .cboxlab {
     font-size: 1.75rem;
     padding-right: 1rem;
-    padding-top: 0.33rem; /* match button */
+    /* padding-top: 0.33rem; */
     display:inline-block;
     min-width: 8rem; 
-    vertical-align: middle;
+    /* vertical-align: middle; */
 }
 
 .cboxlab:hover {
     cursor: pointer;
+}
+
+/* div that wraps the label and checkbox */
+.controlCheck {
+    display: inline-block;
+}
+
+/* specialize custom control box overriding */
+.panel-body-control {
+    padding: 1.15rem;
 }
