@@ -80,7 +80,8 @@
     padding-right: 1rem;
     /* padding-top: 0.33rem; */
     display:inline-block;
-    min-width: 8rem; 
+    /* to be consistent, this should be the size of the widest label */
+    min-width: 10rem; 
     /* vertical-align: middle; */
 }
 

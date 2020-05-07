@@ -3,8 +3,10 @@
 // mostly, this defines the interavtive buttons that are laid on top of the map
 
 // TODO:
-// [ ] when the screen height is small, the top-right and bottom-right buttons overlap each other
+// [ ] add a CSS class to RHS control buttons so they can all be resized easily (in mutex_button constructor?)
+// [ ] dynamically resize buttons depending on (i) initial viewport height or (ii) after resizing
 // [ ] use FeatureGroup rather than LayerGroup for tiles?
+// [ ] sizing of class 'cboxlab'
 
 var map = L.map('map', {
     minZoom: 0,
@@ -62,25 +64,27 @@ function flatten_geoJSON() {
 // label: the text label used when displaying info about the category
 // endpoint: the URL that the tile-classifying function should call when (points to an AWS API Gateway)
 // consider if we want to have different textures for common things like landuse?
-const categories = {
-    rail: {
-        bgURI: "images/railroad-icon.png",
-        color: '#1b9e77',
-        label: 'Railroad',
-        endpoint: 'https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'
-    },
-    airfield: {
-        bgURI: "images/jet-icon.png",
-        color: '#d95f02',
-        label: 'Airfield',
-        endpoint: 'https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'
-    },
-    highway: {
-        bgURI: "images/road-icon.png",
-        color: '#7570b3',
-        label: 'Motorway',
-        endpoint: 'https://www.abcxyz.com'
+class map_category {
+    constructor(picURI,color,label,endpoint) {
+        this._uri = picURI;
+        this._col = color;
+        this._lab = label;
+        this._endp = endpoint;
     }
+    get pic() { return this._uri; }
+    get color() { return this._col; }
+    get label() { return this._lab; }
+    get endpoint() { return this._endp; }
+};
+
+const categories = {
+    // rail: map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    // airfield: map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    // highway: map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
+    military: new map_category("images/military.png","#1b9e77","Military", "www.example.com"),
+    land_construction: new map_category('images/construction.png','#ff00ff','Construction','www.example.com'),
+    land_commerce: new map_category('images/commerce.png','#ffff00','Commerce','www.example.com'),
+    land_industry: new map_category('images/industry.png','#00ffff','Industry','www.example.com')
 }
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
@@ -114,18 +118,19 @@ const mutex_button = function(bgURI,category_name,display_name,add_callback = nu
     return L.Control.extend(rv);
 }
 
+// stamping out generic buttons (they all have the same behavior)
+for(let [key, val] of Object.entries(categories)) {
+    const button = mutex_button(val.pic,key,val.label);
+    map.addControl(new button());
+}
+
+
 function getActiveButton() {
     for(let key of Object.keys(categories)) {
         let button = document.getElementById(`${key}_filter`);
         if(button.getAttribute('data-active') === 'active') return key;
     }
     return '';
-}
-
-// stamping out generic buttons (they all have the same behavior)
-for(let [key, val] of Object.entries(categories)) {
-    const button = mutex_button(val['bgURI'],key,val['label']);
-    map.addControl(new button());
 }
 
 const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('tweet_filter');
@@ -325,7 +330,7 @@ var exportControl =  L.Control.extend({
 });
 
 map.addControl(new TweetControl());
-map.addControl(new FilterTweetControl());
+// map.addControl(new FilterTweetControl());
 map.addControl(new docuGuide());
 map.addControl(new locationControl());
 map.addControl(new exportControl());
@@ -361,7 +366,7 @@ const drawControl = new L.Control.Draw(drawing_options);
 map.addControl(drawControl);
 
 class query_control {
-    constructor(queryID,category,color) {
+    constructor(queryID,category,color,label) {
         this._id = queryID;
         this._category = category;
         this._color = color;
@@ -370,7 +375,7 @@ class query_control {
         const ctrlBar = L.control.custom({
             position: 'bottomleft',
             content : `<div class="panel-body-control">
-                        <span class="cboxlab" id="${spanID}">${capitalize(category)}</span>
+                        <span class="cboxlab" id="${spanID}">${capitalize(label)}</span>
                         <div class="controlCheck">
                             <input type="checkbox" id="${chkID}" class="cbx hidden" checked>
                             <label for="${chkID}" class="lbl" style="background-color:${color}"></label>
@@ -460,12 +465,13 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
-        let endpoint, category, layer_color = '';
+        let endpoint, category, label, layer_color = '';
         const active_category = getActiveButton();
         if(categories.hasOwnProperty(active_category)) {
             category = active_category;
-            endpoint = categories[active_category]['endpoint'];
-            layer_color = categories[active_category]['color'];
+            endpoint = categories[active_category].endpoint;
+            layer_color = categories[active_category].color;
+            label = categories[active_category].label;
         } else {
             console.warn(`No button active; polygon has no effect.`);
             return;
@@ -485,7 +491,7 @@ map.on(L.Draw.Event.CREATED, async function(e) {
         if(layerGroup.getLayers().length) {
             layerGroup.addTo(map);
             selectionList[query_id] = layerGroup; // tracking all the searches not cleared
-            let QC = new query_control(query_id,category,layer_color);
+            let QC = new query_control(query_id,category,layer_color,label);
             queryControls[query_id] = QC;
         }
     }
