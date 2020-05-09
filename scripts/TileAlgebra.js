@@ -97,7 +97,7 @@ var tileAlgebra = (function () {
     }
     
     // this is a good use case for WebWorkers; see https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
-    let validate_tile = async function (service_endpoint, category, x, y, z) {
+    let validate_tile = async function (service_endpoint, x, y, z) {
         
         const AorBorC = 'abc'[Math.floor(Math.random() * 3)];
         let tileURL = `https://${AorBorC}.tile.openstreetmap.org/${z}/${x}/${y}.png`;
@@ -108,15 +108,13 @@ var tileAlgebra = (function () {
         tileB64 = tileB64.replace(/^data:image\/(png|jpg);base64,/, "");
         // the next async result is sending the string to classifier(s)
         const request_body = {
-            z: z,
-            x: x,
-            y: y,
-            category: category,
+            z: "",
+            x: "",
+            y: "",
             tile_base64: tileB64
         };
         // placeholder:
-        // let res = tileB64.length % 8; // lengths are all even since b64 encodes in groups of 6 bytes?
-        return Math.random() < 0.33;
+        // return Math.random() < 0.33;
         // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
         const response = await fetch(service_endpoint, {
             method: 'POST',
@@ -130,7 +128,10 @@ var tileAlgebra = (function () {
             referrerPolicy: 'origin',
             body: JSON.stringify(request_body)
         });
-        return await response.json();
+        let resp = await response.json();
+        // console.log(`response was: {resp}`);
+        // for now, the classification is stored in the 'FeatureClass' field:
+        return resp.hasOwnProperty('FeatureClass') && resp['FeatureClass'] === true;
     }
 
     // 'tol' is the minimum overlap in terms of area we'll accept
@@ -214,11 +215,11 @@ var tileAlgebra = (function () {
 
         // need to offload this task to WebWorkers?
         // let resultset = new Set();
-        let include_neighbors = false;
+        // let include_neighbors = false;
         let validated_tiles = tiles_in_poly.map(e => {
             return new Promise((resolve,reject) => {
                 try {
-                    let res = validate_tile(service_endpoint,category,...e)
+                    let res = validate_tile(service_endpoint,...e)
                     .then( rv => {
                         // if we append to map, can we also track the items as a LayerGroup?
                         // update progress bar

@@ -81,10 +81,10 @@ const categories = {
     // rail: map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
     // airfield: map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
     // highway: map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
-    military: new map_category("images/military.png","#1b9e77","Military", "www.example.com"),
-    land_construction: new map_category('images/construction.png','#ff00ff','Construction','www.example.com'),
-    land_commerce: new map_category('images/commerce.png','#ffff00','Commerce','www.example.com'),
-    land_industry: new map_category('images/industry.png','#00ffff','Industry','www.example.com')
+    military: new map_category("images/military.png","#1b9e77","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
+    land_construction: new map_category('images/construction.png','#ff00ff','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_commerce: new map_category('images/commerce.png','#ffff00','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_industry: new map_category('images/industry.png','#00ffff','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
 }
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}

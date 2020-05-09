@@ -32,20 +32,21 @@
     <script src="scripts/cognito-auth.js"></script>
     <script src="scripts/map_bg.js"></script>
     <script>
-        var HelpControl =  L.Control.extend({
+        const HelpControl =  L.Control.extend({
 
             options: {
                 position: 'bottomright'
             },
 
             onAdd: function (map) {
-                this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
 
+                const button_size = '45px';
+                this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 this.container.style.backgroundColor = 'white';
                 this.container.style.backgroundImage = "url(images/help7.png)";
-                this.container.style.backgroundSize = "45px 45px";
-                this.container.style.width = '45px';
-                this.container.style.height = '45px';
+                this.container.style.backgroundSize = `${button_size} ${button_size}`;
+                this.container.style.width = button_size;
+                this.container.style.height = button_size;
 
                 this.container.onclick = function(){ window.open("guide.html") };
 
@@ -61,14 +62,10 @@
                 /* Prevent scroll events propagation to map when cursor on the div */
                 L.DomEvent.disableScrollPropagation(this.container);
 
-                for (var event in this.options.events) {
-                    L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-                }
                 return this.container;
             }
         });
-        const helpControl = new HelpControl();
-        map.addControl(helpControl);
+        map.addControl(new HelpControl());
     </script>
 </body>
 </html>
