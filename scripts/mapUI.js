@@ -45,19 +45,6 @@ function flatten_geoJSON() {
     };
 }
 
-// colors for tiles associated with given categories
-// https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
-// TODO: sync this with category names - right now they both 'happen' to be hard-coded with the same names
-// const _palette = {
-//     rail: '#1b9e77',
-//     airfield: '#d95f02',
-//     motorway: '#7570b3',
-//     runway: '#e7298a',
-//     landuse_commercial: '#66a61e',
-//     landuse_industrial: '#e6ab02',
-//     landuse_residential: '#a6761d'
-// }
-
 // this is the data mapping the category names to their unique resources:
 // bgURI: the (server-side) picture used to create a button
 // color: the associated color used on the map and controls
@@ -77,14 +64,16 @@ class map_category {
     get endpoint() { return this._endp; }
 };
 
+// colors for tiles associated with given categories
+// https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
 const categories = {
-    // rail: map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    // airfield: map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    // highway: map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
-    military: new map_category("images/military.png","#1b9e77","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
-    land_construction: new map_category('images/construction.png','#ff00ff','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_commerce: new map_category('images/commerce.png','#ffff00','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_industry: new map_category('images/industry.png','#00ffff','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
+    rail: new map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    airfield: new map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    // highway: new map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
+    military: new map_category("images/military.png","#e7298a","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
+    land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
 }
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
@@ -473,7 +462,8 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             layer_color = categories[active_category].color;
             label = categories[active_category].label;
         } else {
-            console.warn(`No button active; polygon has no effect.`);
+            haveSnack("No active category; polygon has no effect.","#AE3D0D");
+            console.warn("No active category; polygon has no effect.");
             return;
         }
         num_queries++;

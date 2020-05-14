@@ -98,3 +98,51 @@
 .panel-body-control {
     padding: 1.15rem;
 }
+
+/* zero tiles search notification styles (the 'snackbar') */
+.snackbar {
+    visibility: hidden;
+    min-width: 250px; /* Set a default minimum width */
+    margin-left: -125px; /* Divide value of min-width by 2 */
+    /* background-color: #333; */
+    color: #fff; /* White text color */
+    text-align: center;
+    font-size: 1.5rem;
+    border-radius: 0.2rem;
+    padding: 16px;
+    position: fixed; /* Sit on top of the screen */
+    left: 50%; /* Center the snackbar */
+    bottom: 2.5rem; /* 30px from the bottom */
+}
+
+.snackbar-show {
+    visibility: visible; /* Show the snackbar */
+    /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+    However, delay the fade out process for 2.5 seconds */
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@media(-webkit-keyframes) {
+    fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+  }
+}
+  
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+  
+@media(-webkit-keyframes) {
+    fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+    }
+} 
+  
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}

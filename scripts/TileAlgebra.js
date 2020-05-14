@@ -97,6 +97,7 @@ var tileAlgebra = (function () {
     }
     
     // this is a good use case for WebWorkers; see https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
+    // to avoid the chance of the main browser window freezing
     let validate_tile = async function (service_endpoint, x, y, z) {
         
         const AorBorC = 'abc'[Math.floor(Math.random() * 3)];
@@ -105,7 +106,7 @@ var tileAlgebra = (function () {
         // the first async request is to get the tile defined by x/y/z from OSM server, and convert it into base64enc string
         const img = await loadImage(tileURL);
         let tileB64 = img_b64(img);
-        tileB64 = tileB64.replace(/^data:image\/(png|jpg);base64,/, "");
+        tileB64 = tileB64.replace(/^data:image\/(png|jpg);base64,/,"");
         // the next async result is sending the string to classifier(s)
         const request_body = {
             z: "",
@@ -155,8 +156,8 @@ var tileAlgebra = (function () {
         let stop_x  = long2tile(NE.lng, z);
         let start_y = lat2tile(NE.lat, z);
         let stop_y  = lat2tile(SW.lat, z);
-        console.log(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
-        console.log(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
+        // console.log(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
+        // console.log(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
         let res = [];
         // this is the naive and slow way, but we cannot assume the polygon is convex!
         for (let x = start_x; x <= stop_x; x++) {
@@ -168,7 +169,7 @@ var tileAlgebra = (function () {
                 }
             }
         }
-        console.log(`Found a total of ${res.length} tiles intersecting the polygon!`);
+        // console.log(`Found a total of ${res.length} tiles intersecting the polygon!`);
         return res;
     }
 
@@ -244,15 +245,21 @@ var tileAlgebra = (function () {
             validated_tiles
         ).then(function(tiles) {
             let num_pos = tiles.reduce((v,e) => v + e.valid, 0);
-            console.log(`Before filtering: ${num_pos} positive and ${tiles.length - num_pos} negative tiles`);
+            // console.log(`Before filtering: ${num_pos} positive and ${tiles.length - num_pos} negative tiles`);
             tiles = tiles.filter(e => e.valid);
-            console.info(`There are ${tiles.length} tiles to add to the map!`);
-            tiles.forEach(e => {
-                let rect = get_as_rectangle(...e.coords,{color: color, opacity: 0.75});
-                rect.bindTooltip('Hi there!');
-                // any other rect options, etc. may be set
-                search_layer.addLayer(rect);
-            });
+            // console.info(`There are ${tiles.length} tiles to add to the map!`);
+            if(tiles.length === 0) {
+                // here, we don't want to create a control box since no tiles will be added.
+                // instead, we should have an ephemeral popup indicating that no tiles matched the query
+                haveSnack("No tiles were found!",color);
+            } else {
+                tiles.forEach(e => {
+                    let rect = get_as_rectangle(...e.coords,{color: color, opacity: 0.75});
+                    rect.bindTooltip('Hi there!');
+                    // any other rect options, etc. may be set
+                    search_layer.addLayer(rect);
+                });
+            }
         });
         // remove progress bar to clean up
         map.removeLayer(progressBar);
