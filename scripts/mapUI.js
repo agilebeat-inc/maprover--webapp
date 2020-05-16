@@ -450,7 +450,7 @@ const queryControls = {};
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
-    const zoom_lvl = Math.min(this.getZoom() + 5,19);
+    const zoom_lvl = Math.min(this.getZoom() + 4,19);
     
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
@@ -462,15 +462,14 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             layer_color = categories[active_category].color;
             label = categories[active_category].label;
         } else {
-            haveSnack("No active category; polygon has no effect.","#AE3D0D");
-            console.warn("No active category; polygon has no effect.");
+            haveSnack("No active category: polygon has no effect.");
+            console.warn("No active category: polygon has no effect.");
             return;
         }
         num_queries++;
         const query_id = `query_${num_queries}`;
         let layerGroup = await tileAlgebra.bbox_coverage(
             endpoint,
-            category,
             e.layer._bounds._northEast,
             e.layer._bounds._southWest,
             zoom_lvl,
@@ -478,7 +477,7 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             query_id,
             e.layer.toGeoJSON()
         );
-        if(layerGroup.getLayers().length) {
+        if(layerGroup !== null && layerGroup.getLayers().length) {
             layerGroup.addTo(map);
             selectionList[query_id] = layerGroup; // tracking all the searches not cleared
             let QC = new query_control(query_id,category,layer_color,label);
