@@ -127,7 +127,7 @@ const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('twe
 // mutex for the buttons that can toggle
 // this should be added as a 'click' event callback for the buttons in the mutex group
 const button_mutex = function(id,onclass,offclass) {
-    let ix = _mutex_group.indexOf(id);
+    const ix = _mutex_group.indexOf(id);
     if(ix >= 0) {
         _mutex_group.forEach((elem,i) => {
             let is_active = i === ix;
