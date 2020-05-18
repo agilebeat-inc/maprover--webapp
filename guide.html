@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 <head>
-    <meta charset="utf=8">
+    <meta charset="utf-8">
     <title>Maprover | Getting Started</title>
     <link rel="shortcut icon" type="image/icon" href="./favicon.ico">
     <style>
+        /* limit how wide on wide screens but take all real estate on small screens: */
+        :root {
+            --width: min(75rem,100%);
+        }
         body {
             background-color: #e8f3e1;
         }
@@ -13,101 +17,115 @@
             color: black;
             text-align: center;
             font-family: "Helvetica Neue";
+            font-size: 2.5rem;
         }
 
         h2, p {
             text-align: center;
         }
 
-        li {
+        p,li {
             font-family: "Helvetica Neue";
-            font-size: 15px;
-            text-align: -webkit-left;
-
+            font-size: max(1.5rem,20px);
+            /* text-align: -webkit-left; */
+            margin-left:auto;
+            margin-right: auto;
         }
-        li > img {
+        p,li,hr {
+            max-width: calc(0.9*var(--width));
+        }
+        img.guide {
             display: block;
             margin-right: auto;
-            width: 630px;
-            height: 333px;
-
+            max-width: calc(0.95 * var(--width));
         }
-        li > img:hover {
+        /* img.guide:hover {
             box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
-        }
+        } */
 
         #wrapper {
-            max-width: 60rem;
+            max-width: var(--width);
             margin-left: auto;
             margin-right: auto;
         }
-
     </style>
 </head>
 <body>
     <div id="wrapper">
 
     <h1>Maprover</h1>
-    <h2>Give yourself the power of geospatial search technology.</h2>
-
-    <p>Maprover is an innovative search tool that enhances user information processing capabilities by allowing for the quick and easy gathering of geospatial context data.
-
-        Intuitive and user-friendly, Maprover empowers you by sharply increasing efficiency when it comes to collecting geospatial data. What would otherwise be the time-consuming task of manually finding and recording the location of map items becomes the simple matter of a few clicks.
-
-        Simply highlight the geographic area of interest and allow Maprover to do the rest by finding and locating the search item. Consult the step-by-step user guide below to see just how easy it is to sign in and get started.</p>
 
     <hr>
 
-    <h2>Maprover User Guide</h2>
+    <h2>Give yourself the power of geospatial search technology.</h2>
+
+    <p>
+        Maprover is an innovative search tool that enhances user information-processing capabilities via quick and easy gathering of geospatial context data.
+    </p>
+
+    <p>
+        Intuitive and user-friendly, Maprover empowers you by sharply increasing efficiency when it comes to collecting geospatial data. 
+        What would otherwise be the time-consuming task of manually finding and recording the location of map items becomes a matter of a few clicks.
+    </p>
+
+    <p>
+        Simply highlight the geographic area of interest and allow Maprover to do the rest by finding and locating the search item. 
+        Consult the step-by-step user guide below to see just how easy it is to get started.
+    </p>
+
+    <hr>
+
+    <h2>User Guide</h2>
 
     <ol>
         <li>
             Go to <a href="https://maprover.io">https://maprover.io/</a> to sign in or register.
-            <img src="images/1.png">
+            <img src="images/1.png" class='guide'>
         </li>
         <li>
             Those who do not have an account are required to register. Follow the registration link on the sign-in page and enter your email address as your user name. Enter and confirm a personal password. Password must contain at least 8 characters including at least one upper case letter and one special character. Click submit.
-            <img src="images/2.png" alt="Trulli">
+            <img src="images/2.png" class='guide'>
         </li>
         <li>
             Check your email for a verification code.
-            <img src="images/3.png" alt="Trulli">
+            <img src="images/3.png" class='guide'>
         </li>
         <li>
             Enter your email address and verification code on the verification page. The sign-in page will then appear and you can sign in as usual.
-            <img src="images/4.png" alt="Trulli">
+            <img src="images/4.png" class='guide'>
         </li>
         <li>
-            Select the icon of the item you intend to search for in the upper right corner of the page. In this case the railroad track representing railroad lines has been selected.
-            <img src="images/5.png">
+            Select the icon of the item you intend to search for in the upper right corner of the page. In this case the tracks icon, representing railroad lines, has been selected.
+            <img src="images/5.png" class='guide'>
         </li>
         <li>
-            Next, select the polygon icon on the upper left of the page in order to outline the search area of interest.
-            <img src="images/6.png">
+            Next, select the polygon control <img src="images/polygon_icon.png" style="width:33px;vertical-align:bottom;"> on the upper left of the page to begin outlining the search area of interest.
+            <img src="images/6.png" class='guide'>
         </li>
         <li>
             To begin your search, connect the first and last points of the border of the search area.
-            <img src="images/7.png">
+            <img src="images/7.png" class='guide'>
         </li>
         <li>
-            Search progress is indicated by a status bar that appears in the lower left of the page.
-            <img src="images/8.png" alt="Trulli">
+            Search progress is indicated by a status bar that appears in the lower left of the page. 
+            Each completed search has a corresponding controller allowing the result set to be hidden or shown, centered on the map, or removed entirely.
+            <img src="images/8.png" class='guide'>
         </li>
         <li>
-            The location of railroad lines within the area of search is indicated by the blue squares.
-            <img src="images/9.png" alt="Trulli">
+            Each tile marked in the query result corresponds to a map location assoiciated with the search category. 
+            <img src="images/9.png" class='guide'>
         </li>
         <li>
-            Click the file icon in the lower right corner of the page to save.
-            <img src="images/10.png" alt="Trulli">
+            Click the <img src="images/export.png" style="width:33px;vertical-align:bottom;"> icon in the lower right corner of the page to save.
+            <img src="images/10.png" class='guide'>
         </li>
         <li>
             File should appear in downloads as a zipped shapefile.
-            <img src="images/11.png" alt="Trulli">
+            <img src="images/11.png" class='guide'>
         </li>
     </ol>
 
-    <p><i>Questions? Contact office@agilebeat.com</i></p>
+    <p><i>Questions? Contact <a href="mailto:office@agilebeat.com">office@agilebeat.com</a></i></p>
 
     </div>
     </body>

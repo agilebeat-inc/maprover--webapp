@@ -305,6 +305,9 @@ var exportControl =  L.Control.extend({
             if (Object.keys(selectionList).length > 0) {
                 let combinedGeoJSON = flatten_geoJSON();
                 shpwrite.download(combinedGeoJSON, options);
+            } else {
+                // notify wayward user that we can't export nothing!
+                haveSnack("Nothing to export - make a selection first!");
             }
         }
 
