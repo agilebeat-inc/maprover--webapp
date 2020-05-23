@@ -74,7 +74,7 @@ const categories = {
     land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
     land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
     land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
-}
+};
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
@@ -332,6 +332,72 @@ layer.addTo(map); // by default, the controls have higher z-axis
 var editableLayers = new L.FeatureGroup();
 map.addLayer(editableLayers);
 
+// selecftize menu inside of a Leaflet control:
+// following https://stackoverflow.com/questions/25763626/create-a-leaflet-custom-checkbox-control
+// plus we'd like to position top-center (has been a PR in Leaflet for like 5 years!!)
+// https://stackoverflow.com/questions/33614912/how-to-locate-leaflet-zoom-control-in-a-desired-position/33621034#33621034
+// Create additional Control placeholders
+function addControlPlaceholders(map) {
+    const corners = map._controlCorners,lf = 'leaflet-',container = map._controlContainer;
+
+    function createCorner(vSide, hSide) {
+        const className = `${lf}${vSide} ${lf}${hSide}`;
+        corners[`${vSide}${hSide}`] = L.DomUtil.create('div', className, container);
+    }
+
+    createCorner('verticalcenter', 'left');
+    createCorner('verticalcenter', 'right');
+    createCorner('top','horizcenter');
+    createCorner('bottom','horizcenter');
+}
+addControlPlaceholders(map);
+
+// Change the position of the Zoom Control to a newly created placeholder.
+map.zoomControl.setPosition('verticalcenterleft');
+// You can also put other controls in the same placeholder.
+// L.control.scale({position: 'verticalcenterright'}).addTo(map);
+
+const command = L.control({position: 'tophorizcenter'});
+
+command.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'command');
+    const category_names = Object.keys(categories).map(e => categories[e].label);
+    const dL = category_names.join(',');
+    div.innerHTML = `
+    <label for="categories">Choose a category</label>
+    <input name="categories" id="cat_pick" class="dropdown-input" data-list="${dL}">
+    <button class="dropdown-btn" type="button"></button>
+    `; 
+    return div;
+};
+command.addTo(map);
+
+// a pretty cheeze horrid hack to make this work like Selectize:
+const comboplete = new Awesomplete('input.dropdown-input', {
+	minChars: 0,
+});
+Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
+	if (comboplete.ul.childNodes.length === 0) {
+		comboplete.minChars = 0;
+		comboplete.evaluate();
+	}
+	else if (comboplete.ul.hasAttribute('hidden')) {
+		comboplete.open();
+	}
+	else {
+		comboplete.close();
+	}
+});
+
+// populate selectize menu:
+// https://github.com/selectize/selectize.js/blob/master/docs/api.md
+// this maddeningly, inexplicably fails absolutely! WTF!
+// $(function() {
+//     const category_names = Object.keys(categories).map(e => categories[e].label);
+//     console.log(`Category names are: ${category_names}`);
+// 	$('#cat_pick').selectize({options: category_names,maxItems: null});
+// });
+
 const drawing_options = {
     position: 'topleft',
     draw: {
@@ -458,7 +524,7 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
         let endpoint, category, label, layer_color = '';
-        const active_category = getActiveButton();
+        const active_category = getActiveButton(); // only need to replace this with selectize menu
         if(categories.hasOwnProperty(active_category)) {
             category = active_category;
             endpoint = categories[active_category].endpoint;

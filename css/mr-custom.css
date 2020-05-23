@@ -146,3 +146,39 @@
     from {bottom: 30px; opacity: 1;}
     to {bottom: 0; opacity: 0;}
 }
+
+/* selectize menu (does NOT work since selectize completely clobbers this element...) */
+#categories {
+    position: fixed;
+    z-index: 9000;
+    top: 2rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* https://stackoverflow.com/questions/33614912/how-to-locate-leaflet-zoom-control-in-a-desired-position/33621034#33621034 */
+.leaflet-verticalcenter {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    top: 50%; /* possible because the placeholder's parent is the map */
+    transform: translateY(-50%); /* using the CSS3 Transform technique */
+    padding-top: 10px;
+}
+
+.leaflet-verticalcenter .leaflet-control {
+    margin-bottom: 10px;
+}
+
+/* The ones we actually want are centered in X and at top or bottom of screen: */
+.leaflet-horizcenter {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.leaflet-horizcenter .leaflet-control {
+    margin-left: 10px;
+}
