@@ -114,9 +114,9 @@ var tileAlgebra = (function () {
         // console.info(`@${now}: length of b64 string @ ${x}/${y}/${z}: ${tileB64.length}`);
         // the next async result is sending the string to classifier(s)
         const request_body = {
-            z: "",
-            x: "",
-            y: "",
+            z: z,
+            x: x,
+            y: y,
             tile_base64: tileB64
         };
         // placeholder:
