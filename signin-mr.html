@@ -1,224 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Full Screen Leaflet Map</title>
-    <meta charset="utf-8"/>
-    <link
-            rel="stylesheet"
-            href="css/vendor/leaflet.css"
-    />
-    <style>
-        form {border: 1px solid #f1f1f1;}
-        body {
-            padding: 0;
-            margin: 0;
-            font-family: "Times New Roman";
-            color: #3f3f3f;
-        }
-        html, body, #map {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-        }
-        div#form-wrap {
-            background-color: transparent;
-            opacity: 1;
-            display: run-in;
-            margin-left: 2cm;
-            margin-right: 2cm;
-            bottom: 35%;
-            width: auto;
-            height: auto;
-            padding: 5px;
-        }
-        /* Full-width input fields */
-        input[type=text], input[type=password], input[type=email] {
-            width: 90%;
-            opacity: 1;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: run-in;
-            border: 1px solid #f6f5f3;
-            box-sizing: border-box;
-        }
-        /* Set a style for all buttons */
-        button {
-            background-color: #4b6777;
-            color: whitesmoke;
-            padding: 16px 10px;
-            margin: 8px 0;
-            border: none;
-            cursor: pointer;
-            width: 80%;
-        }
-        button:hover {
-            opacity: 0.8;
-        }
-        /* Center the image and position the close button */
-        .imgcontainer {
-            text-align: center;
-            vertical-align: middle;
-            margin: 24px 0 12px 0;
-            position: absolute;
-        }
-        img.avatar {
-            width: 10%;
-            border-radius: 15%;
-            vertical-align: middle;
-        }
-        .container {
-            padding: 16px;
-        }
-        span.psw {
-            float: right;
-            padding-top: 1px;
-        }
-        /* The Modal (background) */
-        .modal {
-            position: absolute; /* Stay in place */
-            z-index: 1; /* Sit on top */
-            left: 44%;
-            top: 40%;
-            transform:translate(-50%,-50%);
-            width: 40%; /* Full width */
-            height: 50%; /* Full height */
-            overflow: fragments; /* Enable scroll if needed */
-            background-color: rgb(0, 0, 0); /* Fallback color */
-            background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
-            padding-top: 60px;
-        }
-        /* Modal Content/Box */
-        .modal-content {
-            background-color: #f6f5f3;
-            margin: 5% auto 20% auto; /* 5% from the top, 15% from the bottom and centered */
-            border: transparent;
-            width: 50%; /* Could be more or less, depending on screen size */
-        }
-        /* The Close Button (x) */
-        .close {
-            position: absolute;
-            right: 25px;
-            top: 0;
-            color: #000;
-            font-size: 5px;
-            font-weight: bold;
-        }
-        .close:hover,
-        .close:focus {
-            color: red;
-            cursor: pointer;
-        }
-        /* Add Zoom Animation */
-        .animate {
-            -webkit-animation: animatezoom 0.6s;
-            animation: animatezoom 0.6s
-        }
-        @-webkit-keyframes animatezoom {
-            from {
-                -webkit-transform: scale(0)
-            }
-            to {
-                -webkit-transform: scale(1)
-            }
-        }
-        @keyframes animatezoom {
-            from {
-                transform: scale(0)
-            }
-            to {
-                transform: scale(1)
-            }
-        }
-        /* Change styles for span and cancel button on extra small screens */
-        @media screen and (max-width: 300px) {
-            span.psw {
-                display: block;
-                float: none;
-            }
-            .cancelbtn {
-                width: 100%;
-            }
-        }
-    </style>
+    <title>Maprover | Sign-In</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/vendor/leaflet.css">
+    <link rel="stylesheet" href="css/commontheme.css">
+    <link rel="shortcut icon" type="image/icon" href="./favicon.ico">
 </head>
 <body>
-<div id="map"></div>
-<div id="form-wrap" class="modal" align="center">
-    <form id="signinForm" class="modal-content animate" action="">
+    <div id="map"></div>
+    <div id="form-wrap" class="modal">
+        <form id="signinForm" class="modal-content animate" action="">
+            <div class="container">
+                <label for="uname">Sign in</label>
+                <input type="email" id="emailInputSignin" placeholder="Email" pattern=".+@.+\..+" required>
+                <label for="psw">Password</label>
+                <input type="password" id="passwordInputSignin" placeholder="Password" pattern=".*" required>
+                <button class="fancy">Sign in</button>
+                <!-- this link could use some styling -->
+                <a href="register-mr.html">Register</a>
+            </div>
+        </form>
+    </div>
 
+    <script src="scripts/vendor/jquery-3.4.1.js"></script>
+    <script src="scripts/vendor/bootstrap.min.js"></script>
+    <script src="scripts/vendor/aws-cognito-sdk.min.js"></script>
+    <script src="scripts/vendor/amazon-cognito-identity.min.js"></script>
+    <script src="scripts/vendor/leaflet.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/cognito-auth.js"></script>
+    <script src="scripts/map_bg.js"></script>
+    <script>
+        const HelpControl =  L.Control.extend({
 
-        <div class="container">
-            <label for="uname">Sign in</label>
-            <input type="email" id="emailInputSignin" placeholder="Email" pattern=".*" required>
-            <label for="psw">Password</label>
-            <input type="password" id="passwordInputSignin" placeholder="Password" pattern=".*" required>
-            <button >Sign in</button>
-            <a href="register-mr.html">Register</a>
-        </div>
+            options: {
+                position: 'bottomright'
+            },
 
-    </form>
-</div>
-<script src="js/vendor/jquery-3.1.0.js"></script>
-<script src="js/vendor/bootstrap.min.js"></script>
-<script src="js/vendor/aws-cognito-sdk.min.js"></script>
-<script src="js/vendor/amazon-cognito-identity.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/cognito-auth.js"></script>
-<script src="js/vendor/leaflet.js"></script>
+            onAdd: function (map) {
 
-<script>
-    var HelpControl =  L.Control.extend({
+                const button_size = '45px';
+                this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                this.container.style.backgroundColor = 'white';
+                this.container.style.backgroundImage = "url(images/help7.png)";
+                this.container.style.backgroundSize = `${button_size} ${button_size}`;
+                this.container.style.width = button_size;
+                this.container.style.height = button_size;
 
-        options: {
-            position: 'bottomright'
-        },
+                this.container.onclick = function(){ window.open("guide.html") };
 
-        onAdd: function (map) {
-            this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                /* Prevent click events propagation to map */
+                L.DomEvent.disableClickPropagation(this.container);
 
-            this.container.style.backgroundColor = 'white';
-            this.container.style.backgroundImage = "url(images/help7.png)";
-            this.container.style.backgroundSize = "45px 45px";
-            this.container.style.width = '45px';
-            this.container.style.height = '45px';
+                /* Prevent right click event propagation to map */
+                L.DomEvent.on(this.container, 'contextmenu', function (ev)
+                {
+                    L.DomEvent.stopPropagation(ev);
+                });
 
-            this.container.onclick = function(){
+                /* Prevent scroll events propagation to map when cursor on the div */
+                L.DomEvent.disableScrollPropagation(this.container);
 
-              window.open("guide.html");
-
+                return this.container;
             }
-
-            /* Prevent click events propagation to map */
-            L.DomEvent.disableClickPropagation(this.container);
-
-            /* Prevent right click event propagation to map */
-            L.DomEvent.on(this.container, 'contextmenu', function (ev)
-            {
-                L.DomEvent.stopPropagation(ev);
-            });
-
-            /* Prevent scroll events propagation to map when cursor on the div */
-            L.DomEvent.disableScrollPropagation(this.container);
-
-            for (var event in this.options.events)
-            {
-                L.DomEvent.on(this.container, event, this.options.events[event], this.container);
-            }
-            return this.container;
-        }
-    });
-    var map = L.map('map', {zoomControl: false}).setView([-41.2858, 174.78682], 14);
-    mapLink =
-        '<a href="https://openstreetmap.org">OpenStreetMap</a>';
-    L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; ' + mapLink + ' Contributors',
-            maxZoom: 18,
-        }).addTo(map);
-    helpControl = new HelpControl();
-    map.addControl(helpControl)
-
-</script>
+        });
+        map.addControl(new HelpControl());
+    </script>
 </body>
 </html>
 

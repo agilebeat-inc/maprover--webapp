@@ -414,9 +414,9 @@ h1{
  * Include this rule to trigger hasLayout and contain floats.
  */
 
-.clearfix {
+/* .clearfix {
     *zoom: 1;
-}
+} */
 
 /* ==========================================================================
    EXAMPLE Media Queries for Responsive Design.

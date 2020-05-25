@@ -1,0 +1,148 @@
+:root {
+    --knob-size: 20px;
+    --pill-width: 32px;
+}
+/* material switch themed checkbox */
+.hidden { display: none; }
+
+/* 'background pill-shaped part of switch 
+ * behavior of border-radius: when just one is supplied
+ * then it stops rounding off after the smaller of width or height is completely circular
+ * so here, all values >= 36px are equivalent
+ */
+.lbl {
+    position: relative;
+    /* display: block; */
+    margin: auto; /* horizontally align center */
+    width: var(--pill-width);
+    border-radius: var(--pill-width);
+    height: 16px;
+    background: #FDAA48;
+    cursor: pointer;
+    transition: all 0.33s ease;
+}
+
+/* 
+ * round part of switch 
+ * note that since 'after' is a pseudo-element, not a pseudo-class (like :hover, :visited),
+ * it should be preceded with two colons, ::after (CSS3) though browers will accept :after for
+ * backwards compatibility
+ */
+.lbl::after {
+    position: absolute;
+    display: block;
+    left: -2px;
+    top: -2px;
+    width: var(--knob-size);
+    height: var(--knob-size);
+    border-radius: var(--knob-size);
+    background-color: rgb(131, 128, 124);
+    box-shadow: 0px 3px 3px rgba(128,0,38,0.05);
+    content: '';
+    transition: all 0.33s ease;
+}
+
+/* squish effect */
+.lbl:active::after {
+    transform: scale(1.15, 0.85);
+}
+
+/* ~ is the 'general sibling combinator' so a label following a .cbx:checked 
+    which creates the need to put the <label> after the <input>
+ */
+.cbx:checked ~ label { background: #1FA187; }
+.cbx:checked ~ label::after {
+    left: calc(var(--pill-width) + 2px - var(--knob-size));
+    background-color: #5E3B07;
+}
+
+.cbx:disabled ~ label {
+    background: #d5d5d5;
+    pointer-events: none;
+}
+
+/* x button */
+.dismiss {
+    padding: 0.33rem 0.5rem;
+    margin: 0;
+    margin-left: 1rem;
+    border: none;
+    color: blanchedalmond;
+    /* display: inline; */
+    float: right;
+}
+
+/* the span with the title for query control panel;
+    needs to have a fixed min. width so that different categories'
+    names align evenly */
+.cboxlab {
+    font-size: 1.75rem;
+    padding-right: 1rem;
+    /* padding-top: 0.33rem; */
+    display:inline-block;
+    /* to be consistent, this should be the size of the widest label */
+    min-width: 10rem; 
+    /* vertical-align: middle; */
+}
+
+.cboxlab:hover {
+    cursor: pointer;
+}
+
+/* div that wraps the label and checkbox */
+.controlCheck {
+    display: inline-block;
+}
+
+/* specialize custom control box overriding */
+.panel-body-control {
+    padding: 1.15rem;
+}
+
+/* zero tiles search notification styles (the 'snackbar') */
+.snackbar {
+    visibility: hidden;
+    min-width: 250px; /* Set a default minimum width */
+    margin-left: -125px; /* Divide value of min-width by 2 */
+    /* background-color: #333; */
+    color: #fff; /* White text color */
+    text-align: center;
+    font-size: 1.5rem;
+    border-radius: 0.2rem;
+    padding: 16px;
+    position: fixed; /* Sit on top of the screen */
+    left: 50%; /* Center the snackbar */
+    bottom: 2.5rem; /* 30px from the bottom */
+}
+
+.snackbar-show {
+    visibility: visible; /* Show the snackbar */
+    /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+    However, delay the fade out process for 2.5 seconds */
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@media(-webkit-keyframes) {
+    fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+  }
+}
+  
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+  
+@media(-webkit-keyframes) {
+    fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+    }
+} 
+  
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
