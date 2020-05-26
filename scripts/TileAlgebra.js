@@ -111,7 +111,7 @@ var tileAlgebra = (function () {
         // tileB64 = tileB64.replace(/^data:image\/(png|jpg);base64,/,"");
         if(tileB64.slice(0,22) === 'data:image/png;base64,') tileB64 = tileB64.slice(22);
         // let now = (new Date(Date.now())).toISOString();
-        // console.info(`@${now}: length of b64 string @ ${x}/${y}/${z}: ${tileB64.length}`);
+        // console.debug(`@${now}: length of b64 string @ ${x}/${y}/${z}: ${tileB64.length}`);
         // the next async result is sending the string to classifier(s)
         const request_body = {
             z: z,
@@ -162,8 +162,8 @@ var tileAlgebra = (function () {
         let stop_x  = long2tile(NE.lng, z);
         let start_y = lat2tile(NE.lat, z);
         let stop_y  = lat2tile(SW.lat, z);
-        // console.log(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
-        // console.log(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
+        // console.debug(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
+        // console.debug(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
         
         let res = [];
         // this is the naive and slow way, but we cannot assume the polygon is convex!
@@ -176,7 +176,7 @@ var tileAlgebra = (function () {
                 }
             }
         }
-        // console.log(`Found a total of ${res.length} tiles intersecting the polygon!`);
+        // console.debug(`Found a total of ${res.length} tiles intersecting the polygon!`);
         return res;
     }
 
@@ -189,10 +189,10 @@ var tileAlgebra = (function () {
         
         const tiles_in_poly = filter_tiles(northEast,southWest,z,polygon_gj);
         const nvalidate = tiles_in_poly.length;
-        console.info(`There are ${nvalidate} tiles to check...`);
+        // console.debug(`There are ${nvalidate} tiles to check...`);
         
         if(nvalidate === 0) { // this shouldn't be possible, really
-            console.error(`Search yielded no tiles to query!`);
+            // console.error(`Search yielded no tiles to query!`);
             haveSnack('No tiles to query!');
             return null;
         }
@@ -252,14 +252,14 @@ var tileAlgebra = (function () {
         await Promise.allSettled(
             validated_tiles
         ).then(function(tiles) {
-            // console.log(tiles);
+
             // first discard any rejected tiles (could retry with these?)
             let r_tiles = tiles.filter(e => e.status === 'fulfilled').map(e => e.value);
             console.log(`Of the ${tiles.length} requested tiles, ${r_tiles.length} tiles were successfully resolved.`);
             let num_pos = r_tiles.reduce((v,e) => v + e.valid, 0);
             console.log(`Before filtering: ${num_pos} positive and ${r_tiles.length - num_pos} negative tiles`);
             let v_tiles = r_tiles.filter(e => e.valid);
-            // console.info(`There are ${v_tiles.length} tiles to add to the map!`);
+            // console.debug(`There are ${v_tiles.length} tiles to add to the map!`);
             if(v_tiles.length === 0) {
                 // here, we don't want to create a control box since no tiles will be added.
                 // instead, we should have an ephemeral popup indicating that no tiles matched the query

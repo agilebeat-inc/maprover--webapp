@@ -392,14 +392,14 @@ class query_control {
         // useful: https://stackoverflow.com/questions/16845614/zoom-to-fit-all-markers-in-mapbox-or-leaflet
         cspan.addEventListener('click',() => {
             // its kind of dumb to pan to a hidden layer, so always restore it first:
-            console.log(`Now the status of checkbox is: ${cbox.checked}`);
+            // console.debug(`Now the status of checkbox is: ${cbox.checked}`);
             if(!cbox.checked) {
                 // simulate a click on the box:
                 // let aclick = new Event('click');
-                // console.log(`Dispatching click to the box ${cbox.getAttribute('id')}`);
+                // console.debug(`Dispatching click to the box ${cbox.getAttribute('id')}`);
                 // cbox.dispatchEvent(aclick);
                 cbox.checked = true; // this restores the toggle but NOT the layer!
-                console.log(`Now the status of checkbox is: ${cbox.checked}`);
+                console.debug(`Now the status of checkbox is: ${cbox.checked}`);
             }
             // map.panInsideBounds(bounds);
             map.fitBounds(bounds.pad(0.5));
@@ -419,13 +419,13 @@ class query_control {
         
         cbox.addEventListener('change',() => {
             // let cbx = document.getElementById(chkID);
-            console.log(`I was changed to ${cbox.checked}!`);
+            // console.debug(`I was changed to ${cbox.checked}!`);
             cbox.checked ? this.restore() : this.hide();
         });
     }
     // remove tile layer from map but keep it in selection list
     hide() {
-        // console.log(`checking for ID ${selectionList[this._id]._leaflet_id}`);
+        // console.debug(`checking for ID ${selectionList[this._id]._leaflet_id}`);
         if(map.hasLayer(selectionList[this._id])) {
             map.removeLayer(selectionList[this._id]);
         }
