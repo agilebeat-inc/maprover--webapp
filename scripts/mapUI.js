@@ -480,7 +480,6 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     }
     // an awkward and roundabout way to get a single value from this set...
     let avail_cols = new Set([...cat_colors].filter(e => !used_cats.has(e)));
-    console.log(avail_cols);
     const itr = avail_cols.values();
     const layer_color = itr.next().value;
     // console.debug(`Using color: ${layer_color}`);
