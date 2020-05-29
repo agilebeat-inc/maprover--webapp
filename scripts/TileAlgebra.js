@@ -136,7 +136,7 @@ var tileAlgebra = (function () {
         });
         let resp = await response.json();
         const t2 = Date.now();
-        console.info(`${x}/${y}/${z} (length ${tileB64.length}): waited ${t1-t0}ms OSM and ${t2-t1}ms Lambda.`);
+        // console.info(`${x}/${y}/${z} (length ${tileB64.length}): waited ${t1-t0}ms OSM and ${t2-t1}ms Lambda.`);
         // for now, the classification is stored in the 'FeatureClass' field:
         return resp.hasOwnProperty('FeatureClass') && resp['FeatureClass'] === true;
     }
@@ -178,11 +178,6 @@ var tileAlgebra = (function () {
         }
         // console.debug(`Found a total of ${res.length} tiles intersecting the polygon!`);
         return res;
-    }
-
-    // unique values of array (not necessarily preseving order!)
-    let unique = function(x) {
-        return [...new Set(x)];
     }
 
     let tile_validator = async function (service_endpoint, northEast, southWest, z, color, id, polygon_gj) {

@@ -52,29 +52,32 @@ function flatten_geoJSON() {
 // endpoint: the URL that the tile-classifying function should call when (points to an AWS API Gateway)
 // consider if we want to have different textures for common things like landuse?
 class map_category {
-    constructor(picURI,color,label,endpoint) {
+    constructor(picURI,label,endpoint) {
         this._uri = picURI;
-        this._col = color;
         this._lab = label;
         this._endp = endpoint;
     }
     get pic() { return this._uri; }
-    get color() { return this._col; }
     get label() { return this._lab; }
     get endpoint() { return this._endp; }
 };
 
 // colors for tiles associated with given categories
 // https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
+// since there will be more categories than can be assigned reasonably distinct colors,
+// we'll hand out colors on the fly and cap the number of different categories that can be present
+// simulaneously on the screen
+const cat_colors = new Set(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
+
 const categories = {
-    rail: new map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    airfield: new map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    // highway: new map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
-    military: new map_category("images/military.png","#e7298a","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
-    land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
-}
+    rail: new map_category("images/railroad-icon.png",'Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    airfield: new map_category("images/jet-icon.png",'Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    // highway: new map_category("images/road-icon.png",'Motorway','https://www.abcxyz.com'),
+    military: new map_category("images/military.png","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
+    land_construction: new map_category('images/construction.png','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_commerce: new map_category('images/commerce.png','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
+    land_industry: new map_category('images/industry.png','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
+};
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
@@ -423,6 +426,8 @@ class query_control {
             cbox.checked ? this.restore() : this.hide();
         });
     }
+    get category() { return this._category; }
+    get color() { return this._color; }
     // remove tile layer from map but keep it in selection list
     hide() {
         // console.debug(`checking for ID ${selectionList[this._id]._leaflet_id}`);
@@ -432,7 +437,7 @@ class query_control {
     }
     // add a hidden layer back on to the map
     restore() {
-        // console.log(`checking for absence of ID ${selectionList[this._id]._leaflet_id}`);
+        // console.debug(`checking for absence of ID ${selectionList[this._id]._leaflet_id}`);
         if(! map.hasLayer(selectionList[this._id])) {
             selectionList[this._id].addTo(map);
         }
@@ -448,25 +453,50 @@ class query_control {
     }
 }
 
-// let the control objects survive?
+// unique values of array (not necessarily preseving order!)
+let unique = function(x) {
+    return [...new Set(x)];
+}
+
+// let the control objects survive
 const queryControls = {};
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
-    const zoom_lvl = Math.min(this.getZoom() + 4,19);
+    const zoom_lvl = Math.min(this.getZoom() + 5,19);
+
+    // first check whether we've already saturated the available number of different layers:
+    // TODO: guard against the case where two queries are launched at the same time, and both are
+    // assigned the same color!
+    let used_cats = new Set();
+    for(const [key,val] of Object.entries(queryControls)) {
+        used_cats.add(val.color);
+    }
+    const n_used = used_cats.size;
+    if(n_used >= cat_colors.size) {
+        // TODO: create a line break in the toast message
+        haveSnack(`Max. of ${n_used} categories may be shown<br>Remove some first!`);
+        return;
+    }
+    // an awkward and roundabout way to get a single value from this set...
+    let avail_cols = new Set([...cat_colors].filter(e => !used_cats.has(e)));
+    console.log(avail_cols);
+    const itr = avail_cols.values();
+    const layer_color = itr.next().value;
+    // console.debug(`Using color: ${layer_color}`);
+    // note that layer color doesn't actually get used unless the query returns something tangible
+
     
-    // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
+    // console.debug(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
-        let endpoint, category, label, layer_color = '';
+        let endpoint, category, label;
         const active_category = getActiveButton();
         if(categories.hasOwnProperty(active_category)) {
             category = active_category;
             endpoint = categories[active_category].endpoint;
-            layer_color = categories[active_category].color;
             label = categories[active_category].label;
         } else {
             haveSnack("No active category: polygon has no effect.");
-            console.warn("No active category: polygon has no effect.");
             return;
         }
         num_queries++;
