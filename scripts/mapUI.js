@@ -67,17 +67,29 @@ class map_category {
 // since there will be more categories than can be assigned reasonably distinct colors,
 // we'll hand out colors on the fly and cap the number of different categories that can be present
 // simulaneously on the screen
-const cat_colors = new Set(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
 
-const categories = {
-    rail: new map_category("images/railroad-icon.png",'Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    airfield: new map_category("images/jet-icon.png",'Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    // highway: new map_category("images/road-icon.png",'Motorway','https://www.abcxyz.com'),
-    military: new map_category("images/military.png","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
-    land_construction: new map_category('images/construction.png','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_commerce: new map_category('images/commerce.png','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_industry: new map_category('images/industry.png','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
-};
+// reading the categories (for testing, from a relative JSON file, for prod from somewhere in AWS)
+let categories;
+async function init_categories(URI) {
+    
+    let freq = new Request(URI);
+    fetch(freq)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        for(const [key,elem] of Object.entries(data) ) {
+            let the_url = `${elem['domain']}/${elem['stage']}/${elem['api_path']}`;
+            console.log(`The URL is: ${the_url}`);
+            data[key]['URL'] = the_url.replace(/\/+/g,"/");
+        };
+        categories = data;
+    });
+}
+
+// we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
+// serverless deployment...
+init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe'); //.then(init_buttons(categories));
+
+const cat_colors = new Set(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
@@ -111,9 +123,11 @@ const mutex_button = function(bgURI,category_name,display_name,add_callback = nu
 }
 
 // stamping out generic buttons (they all have the same behavior)
-for(let [key, val] of Object.entries(categories)) {
-    const button = mutex_button(val.pic,key,val.label);
-    map.addControl(new button());
+function init_buttons(categories) {
+    for(let [key, val] of Object.entries(categories)) {
+        const button = mutex_button(val.pic,key,val.label);
+        map.addControl(new button());
+    }
 }
 
 
@@ -125,7 +139,7 @@ function getActiveButton() {
     return '';
 }
 
-const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('tweet_filter');
+// const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('tweet_filter');
 
 // mutex for the buttons that can toggle
 // this should be added as a 'click' event callback for the buttons in the mutex group
