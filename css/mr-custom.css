@@ -182,3 +182,36 @@
 .leaflet-horizcenter .leaflet-control {
     margin-left: 10px;
 }
+
+.dropdown-btn {
+    vertical-align: top;
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 0.3rem;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    /* background-image:url('http://www.w3.org/html/logo/downloads/HTML5_Logo_32.png'); */
+    /* background-repeat:no-repeat; */
+    background:linear-gradient(hsl(40, 70%, 80%), hsl(40, 70%, 70%));
+    box-shadow: 0 1px white inset, 0 .3em .3em -.3em rgba(0,0,0,.3);
+    border: 1px solid rgba(0,0,0,.3);
+}
+
+span.caret {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    vertical-align: middle;
+    margin-left: 0;
+    border-top: 4px dashed;
+    border-top: 4px solid;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+}
+
+#cat_pick_label {
+    background-color: bisque;
+    border: 1px solid #5E3B07;
+    padding: 0.33rem;
+    border-radius: 0.3rem;
+}

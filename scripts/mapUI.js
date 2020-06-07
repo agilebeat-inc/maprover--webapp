@@ -57,17 +57,42 @@ class map_category {
     get endpoint() { return this._endp; }
 };
 
-// colors for tiles associated with given categories
-// https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
-// const categories = {
-//     rail: new map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
-//     airfield: new map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
-//     // highway: new map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
-//     military: new map_category("images/military.png","#e7298a","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
-//     land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
-//     land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
-//     land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
-// };
+// we could annotate the 'used' set with category identifier
+// if, e.g., queries of the same category should have the same color
+class cat_colors {
+    constructor(colors) {
+        this._colors = new Set(colors);
+        this._ncolor = this._colors.size;
+        this._used = new Set();
+    }
+    get n_available() { return this._ncolor - this._used.size; }
+    get n_colors() { return this._ncolor; }
+    get_colors(n = 1) {
+        if( n < 1 || this.n_available < n ) {
+            return null;
+        }
+        const avail_cols = new Set([...this._colors].filter(e => !this._used.has(e)));
+        const rv = [...avail_cols].slice(0,n);
+        // mark them as unavailable for future usage until returned.
+        rv.forEach(color => this._used.add(color));
+        return rv;
+    }
+    return_colors(cols) {
+        if(typeof cols === "string") {
+            this._used.delete(cols);
+        } else {
+            cols.map(e => this._used.delete(e));
+        }
+    }
+};
+
+// queries get their colors from the color manager
+const colorManager = new cat_colors(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
+
+// unique values of array (not necessarily preseving order!)
+let unique = function(x) {
+    return [...new Set(x)];
+}
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
@@ -221,6 +246,10 @@ var FilterTweetControl =  L.Control.extend({
 
 var locationControl = L.Control.extend({
 
+    options: {
+        position: 'bottomright'
+    },
+
     onAdd: function (map) {
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
@@ -329,11 +358,12 @@ map.addLayer(editableLayers);
 
 // selectize menu inside of a Leaflet control:
 // following https://stackoverflow.com/questions/25763626/create-a-leaflet-custom-checkbox-control
-// plus we'd like to position top-center (has been a PR in Leaflet for like 5 years!!)
+
+// position top-center (has been a PR in Leaflet for like 5 years!!)
 // https://stackoverflow.com/questions/33614912/how-to-locate-leaflet-zoom-control-in-a-desired-position/33621034#33621034
 // Create additional Control placeholders
 function addControlPlaceholders(map) {
-    const corners = map._controlCorners,lf = 'leaflet-',container = map._controlContainer;
+    const corners = map._controlCorners, lf = 'leaflet-', container = map._controlContainer;
 
     function createCorner(vSide, hSide) {
         const className = `${lf}${vSide} ${lf}${hSide}`;
@@ -353,50 +383,76 @@ map.zoomControl.setPosition('verticalcenterleft');
 // L.control.scale({position: 'verticalcenterright'}).addTo(map);
 
 const command_box = L.control({position: 'tophorizcenter'});
+// L.DomEvent.disableClickPropagation(command_box);
+// L.DomEvent.disableScrollPropagation(command_box);
 
 command_box.onAdd = function (map) {
     var div = L.DomUtil.create('div', 'command');
-    const category_names = Object.keys(categories).map(e => categories[e].label);
+    const category_names = Object.keys(categories).map(e => categories[e]['model-label']);
     const dL = category_names.join(',');
     div.innerHTML = `
-    <label for="categories">Choose a category</label>
+    <label for="categories" id='cat_pick_label'>Choose a category</label>
     <input name="categories" id="cat_pick" class="dropdown-input" data-list="${dL}">
-    <button class="dropdown-btn" type="button"></button>
+    <button class="dropdown-btn" type="button"><span class="caret"></button>
     `; 
     return div;
 };
-command_box.addTo(map);
 
-// a pretty cheeze horrid hack to make this work like Selectize:
-const comboplete = new Awesomplete('input.dropdown-input', {
-	minChars: 0,
-});
-Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
-	if (comboplete.ul.childNodes.length === 0) {
-		comboplete.minChars = 0;
-		comboplete.evaluate();
-	}
-	else if (comboplete.ul.hasAttribute('hidden')) {
-		comboplete.open();
-	}
-	else {
-		comboplete.close();
-	}
-});
-// store the completed query whenever a completion is achieved
-// this obviously has the possibility to be out of sync
-// https://stackoverflow.com/questions/35864545/awesomplete-get-selected-text/38074216#38074216
-document.getElementById('cat_pick').addEventListener(
-    'awesomplete-selectcomplete',
-    e => {
-        console.info(`Event target: ${e.target}`);
-        curr_menu_v = this.value;
-    }
-)
+let categories, comboplete;
+
+// probably should be reorganized. This is the chain of dependencies
+// that cascade from needing to wait on loading the category info
+async function init_categories(URI) {
+    
+    let freq = new Request(URI);
+    fetch(freq)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        for(const [key,elem] of Object.entries(data) ) {
+            let the_url = `${elem['domain']}/${elem['stage']}/${elem['api_path']}`;
+            the_url = the_url.replace(/\/+/g,"/");
+            if(!the_url.startsWith('https://')) the_url = `https://${the_url}`;
+            // console.debug(`The URL is: ${the_url}`);
+            data[key]['URL'] = the_url;
+        };
+        categories = data;
+    })
+    .then(function() {
+        command_box.addTo(map);
+        comboplete = new Awesomplete('input.dropdown-input', {
+            minChars: 0
+        });
+        Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
+            if (comboplete.ul.childNodes.length === 0) {
+                comboplete.minChars = 0;
+                comboplete.evaluate();
+            }
+            else if (comboplete.ul.hasAttribute('hidden')) {
+                comboplete.open();
+            }
+            else {
+                comboplete.close();
+            }
+        });
+        // store the completed query whenever a completion is achieved
+        // this obviously has the possibility to be out of sync
+        // https://stackoverflow.com/questions/35864545/awesomplete-get-selected-text/38074216#38074216
+        document.getElementById('cat_pick').addEventListener(
+            'awesomplete-selectcomplete',
+            e => {
+                console.info(`Event value: ${e.target.value}`);
+                curr_menu_v = e.target.value;
+            }
+        )
+    });
+}
+
+// we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
+// serverless deployment...
+init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe');
 
 // populate selectize menu:
 // https://github.com/selectize/selectize.js/blob/master/docs/api.md
-// this maddeningly, inexplicably fails absolutely! WTF!
 // $(function() {
 //     const category_names = Object.keys(categories).map(e => categories[e].label);
 //     console.log(`Category names are: ${category_names}`);
@@ -513,6 +569,8 @@ class query_control {
         delete selectionList[this._id];
         // remove control div from map
         map.removeControl(this._control);
+        // this is a little nasty, mixing in dependencies
+        colorManager.return_colors(this._color);
         delete queryControls[this._id];
         // also remove it from the document
         this._control.remove();
@@ -529,20 +587,29 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
-        let endpoint, category, label;
-        // const active_category = getActiveButton(); // only need to replace this with selectize menu
+        
+        let endpoint='', category='', label='';
         const active_category = curr_menu_v;
-        if(categories.hasOwnProperty(active_category)) {
-            category = active_category;
-            endpoint = categories[active_category].endpoint;
-            label = categories[active_category].label;
-        } else {
+        for(const [key,val] of Object.entries(categories)) {
+            if(val['model-label'] === active_category) {
+                endpoint = val['URL'];
+                label = active_category;
+                category = val['model-name'];
+                break;
+            }
+        }
+        if(endpoint === '') {
             haveSnack("No active category: polygon has no effect.");
             console.warn("No active category: polygon has no effect.");
             return;
         }
-        // get a color:
-        const layer_color = '#ff2200';
+        // get a color (always returns an array, so need to )
+        const layer_color = colorManager.get_colors(1)[0];
+        console.info(`Layer color is: ${layer_color}`);
+        if(layer_color === null) {
+            haveSnack(`Max. of ${colorManager.n_colors} categories may be shown<br>Remove some first!`);
+            return;
+        }
         num_queries++;
         const query_id = `query_${num_queries}`;
         let layerGroup = await tileAlgebra.bbox_coverage(
@@ -559,6 +626,9 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             selectionList[query_id] = layerGroup; // tracking all the searches not cleared
             let QC = new query_control(query_id,category,layer_color,label);
             queryControls[query_id] = QC;
+        } else {
+            // didn't use - give it back
+            colorManager.return_colors(layer_color);
         }
     }
 });
