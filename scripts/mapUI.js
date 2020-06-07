@@ -420,7 +420,8 @@ async function init_categories(URI) {
     .then(function() {
         command_box.addTo(map);
         comboplete = new Awesomplete('input.dropdown-input', {
-            minChars: 0
+            minChars: 1,
+            maxItems: 15;
         });
         Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
             if (comboplete.ul.childNodes.length === 0) {
@@ -588,12 +589,11 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
         
-        let endpoint='', category='', label='';
-        const active_category = curr_menu_v;
+        let endpoint='', category='';
+        const active_category = curr_menu_v; // the label from dropdown
         for(const [key,val] of Object.entries(categories)) {
             if(val['model-label'] === active_category) {
                 endpoint = val['URL'];
-                label = active_category;
                 category = val['model-name'];
                 break;
             }
@@ -603,9 +603,9 @@ map.on(L.Draw.Event.CREATED, async function(e) {
             console.warn("No active category: polygon has no effect.");
             return;
         }
-        // get a color (always returns an array, so need to )
+        // get a color (always returns an array, so need to get first element)
         const layer_color = colorManager.get_colors(1)[0];
-        console.info(`Layer color is: ${layer_color}`);
+        // console.debug(`Layer color is: ${layer_color}`);
         if(layer_color === null) {
             haveSnack(`Max. of ${colorManager.n_colors} categories may be shown<br>Remove some first!`);
             return;
@@ -624,7 +624,7 @@ map.on(L.Draw.Event.CREATED, async function(e) {
         if(layerGroup !== null && layerGroup.getLayers().length) {
             layerGroup.addTo(map);
             selectionList[query_id] = layerGroup; // tracking all the searches not cleared
-            let QC = new query_control(query_id,category,layer_color,label);
+            let QC = new query_control(query_id,category,layer_color,active_category);
             queryControls[query_id] = QC;
         } else {
             // didn't use - give it back

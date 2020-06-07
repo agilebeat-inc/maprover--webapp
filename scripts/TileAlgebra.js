@@ -218,8 +218,10 @@ var tileAlgebra = (function () {
         let prog_trak = new progress_tracker(barID,nvalidate);
         // https://leafletjs.com/examples/map-panes/
         // as a side-effect createPane automatically inserts into the map and creates a classname based on the name [...]Pane
-        let tPane = map.createPane('tempPane');
-        map.getPane('tempPane').style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
+        // if there are multiple queries running simultaneously, we need to keep the temp panes separate
+        const paneID = `${barID}_temp`;
+        let tPane = map.createPane(paneID);
+        map.getPane(paneID).style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
         let search_layer = L.featureGroup([],{pane: 'overlayPane'}); // this is the 'permanent' return value
 
         // need to offload this task to WebWorkers?
@@ -232,7 +234,7 @@ var tileAlgebra = (function () {
                         prog_trak.increment();
                         // create the temp copy with pane specified in options:
                         if(rv) {
-                            let tmpRect = get_as_rectangle(...e,{pane: 'tempPane',color: color,opacity: 0.6});
+                            let tmpRect = get_as_rectangle(...e,{pane: paneID,color: color,opacity: 0.6});
                             tmpRect.addTo(map);
                         }
                         resolve({coords: e, valid: rv});
@@ -273,7 +275,7 @@ var tileAlgebra = (function () {
         map.removeLayer(progressBar);
         progressBar.remove();
         // remove temp pane and add search_layer (hoping user cannot see in between!)
-        map.getPane('tempPane').remove();
+        map.getPane(paneID).remove();
         return search_layer;
     }
 
