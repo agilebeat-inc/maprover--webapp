@@ -89,17 +89,6 @@ class cat_colors {
 // queries get their colors from the color manager
 const colorManager = new cat_colors(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
 
-// unique values of array (not necessarily preseving order!)
-let unique = function(x) {
-    return [...new Set(x)];
-}
-
-// we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
-// serverless deployment...
-init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe'); //.then(init_buttons(categories));
-
-const cat_colors = new Set(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
-
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
 
@@ -427,7 +416,7 @@ async function init_categories(URI) {
         command_box.addTo(map);
         comboplete = new Awesomplete('input.dropdown-input', {
             minChars: 1,
-            maxItems: 15;
+            maxItems: 15
         });
         Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
             if (comboplete.ul.childNodes.length === 0) {
@@ -447,7 +436,7 @@ async function init_categories(URI) {
         document.getElementById('cat_pick').addEventListener(
             'awesomplete-selectcomplete',
             e => {
-                console.info(`Event value: ${e.target.value}`);
+                // console.debug(`Event value: ${e.target.value}`);
                 curr_menu_v = e.target.value;
             }
         )
@@ -462,7 +451,7 @@ init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api
 // https://github.com/selectize/selectize.js/blob/master/docs/api.md
 // $(function() {
 //     const category_names = Object.keys(categories).map(e => categories[e].label);
-//     console.log(`Category names are: ${category_names}`);
+//     console.debug(`Category names are: ${category_names}`);
 // 	$('#cat_pick').selectize({options: category_names,maxItems: null});
 // });
 
@@ -599,27 +588,6 @@ map.on(L.Draw.Event.CREATED, async function(e) {
 
     const zoom_lvl = Math.min(this.getZoom() + 5,19);
 
-    // first check whether we've already saturated the available number of different layers:
-    // TODO: guard against the case where two queries are launched at the same time, and both are
-    // assigned the same color!
-    let used_cats = new Set();
-    for(const [key,val] of Object.entries(queryControls)) {
-        used_cats.add(val.color);
-    }
-    const n_used = used_cats.size;
-    if(n_used >= cat_colors.size) {
-        // TODO: create a line break in the toast message
-        haveSnack(`Max. of ${n_used} categories may be shown<br>Remove some first!`);
-        return;
-    }
-    // an awkward and roundabout way to get a single value from this set...
-    let avail_cols = new Set([...cat_colors].filter(e => !used_cats.has(e)));
-    const itr = avail_cols.values();
-    const layer_color = itr.next().value;
-    // console.debug(`Using color: ${layer_color}`);
-    // note that layer color doesn't actually get used unless the query returns something tangible
-
-    
     // console.debug(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
         

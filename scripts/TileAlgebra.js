@@ -194,7 +194,7 @@ var tileAlgebra = (function () {
         }
 
         // will need to assign it a unique ID since there can be multiple progress bars
-        let barID = `prog_${id}`;
+        const barID = `prog_${id}`;
         const bar_class = "progress-bar progress-bar-striped active";
         const bar_style = `style="min-width: 1em; width: 0%; background-color: ${color}"`;
         let progressBar = L.control.custom({
@@ -252,15 +252,13 @@ var tileAlgebra = (function () {
         ).then(function(tiles) {
             // first discard any rejected tiles (could retry with these?)
             let r_tiles = tiles.filter(e => e.status === 'fulfilled').map(e => e.value);
-            console.log(`Of the ${tiles.length} requested tiles, ${r_tiles.length} tiles were successfully resolved.`);
+            console.debug(`Of the ${tiles.length} requested tiles, ${r_tiles.length} tiles were successfully resolved.`);
             let num_pos = r_tiles.reduce((v,e) => v + e.valid, 0);
-            console.log(`Before filtering: ${num_pos} positive and ${r_tiles.length - num_pos} negative tiles`);
+            console.debug(`Before filtering: ${num_pos} positive and ${r_tiles.length - num_pos} negative tiles`);
             let v_tiles = r_tiles.filter(e => e.valid);
-            console.info(`There are ${v_tiles.length} tiles to add to the map!`);
+            console.debug(`There are ${v_tiles.length} tiles to add to the map!`);
             if(v_tiles.length === 0) {
                 // here, we don't want to create a control box since no tiles will be added.
-                // instead, we should have an ephemeral popup indicating that no tiles matched the query
-                console.info('Having a zero snack...');
                 haveSnack("No tiles were found!",color);
             } else {
                 v_tiles.forEach(e => {
