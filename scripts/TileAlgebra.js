@@ -136,9 +136,10 @@ var tileAlgebra = (function () {
         });
         let resp = await response.json();
         const t2 = Date.now();
-        // console.info(`${x}/${y}/${z} (length ${tileB64.length}): waited ${t1-t0}ms OSM and ${t2-t1}ms Lambda.`);
-        // for now, the classification is stored in the 'FeatureClass' field:
-        return resp.hasOwnProperty('FeatureClass') && resp['FeatureClass'] === true;
+        console.info(`${x}/${y}/${z} (length ${tileB64.length}): waited ${t1-t0}ms OSM and ${t2-t1}ms Lambda.`);
+        // we hope that the model name is consistently returned in the JSON...
+        const model_name = service_endpoint.split('/').pop();
+        return resp.hasOwnProperty(model_name) && resp[model_name] === true;
     }
 
     // 'tol' is the minimum overlap in terms of area we'll accept
@@ -162,8 +163,8 @@ var tileAlgebra = (function () {
         let stop_x  = long2tile(NE.lng, z);
         let start_y = lat2tile(NE.lat, z);
         let stop_y  = lat2tile(SW.lat, z);
-        // console.debug(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
-        // console.debug(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
+        // console.info(`Running from x: [${start_x} -- ${stop_x}] and y: [${start_y} -- ${stop_y}]`);
+        // console.info(`That's a total of ${Math.abs((start_x-stop_x+1)*(start_y - stop_y + 1))} tiles to check!`);
         
         let res = [];
         // this is the naive and slow way, but we cannot assume the polygon is convex!
@@ -217,8 +218,10 @@ var tileAlgebra = (function () {
         let prog_trak = new progress_tracker(barID,nvalidate);
         // https://leafletjs.com/examples/map-panes/
         // as a side-effect createPane automatically inserts into the map and creates a classname based on the name [...]Pane
-        let tPane = map.createPane('tempPane');
-        map.getPane('tempPane').style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
+        // if there are multiple queries running simultaneously, we need to keep the temp panes separate
+        const paneID = `${barID}_temp`;
+        let tPane = map.createPane(paneID);
+        map.getPane(paneID).style.zIndex = 450; // between the default overlay pane and the next higher shadow pane
         let search_layer = L.featureGroup([],{pane: 'overlayPane'}); // this is the 'permanent' return value
 
         // need to offload this task to WebWorkers?
@@ -231,7 +234,7 @@ var tileAlgebra = (function () {
                         prog_trak.increment();
                         // create the temp copy with pane specified in options:
                         if(rv) {
-                            let tmpRect = get_as_rectangle(...e,{pane: 'tempPane',color: color,opacity: 0.6});
+                            let tmpRect = get_as_rectangle(...e,{pane: paneID,color: color,opacity: 0.6});
                             tmpRect.addTo(map);
                         }
                         resolve({coords: e, valid: rv});
@@ -247,17 +250,17 @@ var tileAlgebra = (function () {
         await Promise.allSettled(
             validated_tiles
         ).then(function(tiles) {
-
             // first discard any rejected tiles (could retry with these?)
             let r_tiles = tiles.filter(e => e.status === 'fulfilled').map(e => e.value);
             console.log(`Of the ${tiles.length} requested tiles, ${r_tiles.length} tiles were successfully resolved.`);
             let num_pos = r_tiles.reduce((v,e) => v + e.valid, 0);
             console.log(`Before filtering: ${num_pos} positive and ${r_tiles.length - num_pos} negative tiles`);
             let v_tiles = r_tiles.filter(e => e.valid);
-            // console.debug(`There are ${v_tiles.length} tiles to add to the map!`);
+            console.info(`There are ${v_tiles.length} tiles to add to the map!`);
             if(v_tiles.length === 0) {
                 // here, we don't want to create a control box since no tiles will be added.
                 // instead, we should have an ephemeral popup indicating that no tiles matched the query
+                console.info('Having a zero snack...');
                 haveSnack("No tiles were found!",color);
             } else {
                 v_tiles.forEach(e => {
@@ -272,7 +275,7 @@ var tileAlgebra = (function () {
         map.removeLayer(progressBar);
         progressBar.remove();
         // remove temp pane and add search_layer (hoping user cannot see in between!)
-        map.getPane('tempPane').remove();
+        map.getPane(paneID).remove();
         return search_layer;
     }
 

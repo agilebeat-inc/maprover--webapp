@@ -1,19 +1,14 @@
 "use strict";
 // custom UI components for the main Maprover page
-// mostly, this defines the interavtive buttons that are laid on top of the map
-
-// TODO:
-// [ ] add a CSS class to RHS control buttons so they can all be resized easily (in mutex_button constructor?)
-// [ ] dynamically resize buttons depending on (i) initial viewport height or (ii) after resizing
-// [ ] use FeatureGroup rather than LayerGroup for tiles?
-// [ ] sizing of class 'cboxlab'
+// mostly, this defines the interactive widgets that are laid on top of the map
+// and manages the user queries' lifecycles
 
 var map = L.map('map', {
     minZoom: 0,
     maxZoom: 19
+}).setView([-37.78333, 175.28333], 11);
     //}).setView([47.39365919797528, 38.91292367990341], 18);
     //}).setView([-36.30215075678218, 174.9156190124816], 12);
-}).setView([-37.78333, 175.28333], 11);
 
 var layer = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -62,27 +57,41 @@ class map_category {
     get endpoint() { return this._endp; }
 };
 
-// colors for tiles associated with given categories
-// https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
-// since there will be more categories than can be assigned reasonably distinct colors,
-// we'll hand out colors on the fly and cap the number of different categories that can be present
-// simulaneously on the screen
+// we could annotate the 'used' set with category identifier
+// if, e.g., queries of the same category should have the same color
+class cat_colors {
+    constructor(colors) {
+        this._colors = new Set(colors);
+        this._ncolor = this._colors.size;
+        this._used = new Set();
+    }
+    get n_available() { return this._ncolor - this._used.size; }
+    get n_colors() { return this._ncolor; }
+    get_colors(n = 1) {
+        if( n < 1 || this.n_available < n ) {
+            return null;
+        }
+        const avail_cols = new Set([...this._colors].filter(e => !this._used.has(e)));
+        const rv = [...avail_cols].slice(0,n);
+        // mark them as unavailable for future usage until returned.
+        rv.forEach(color => this._used.add(color));
+        return rv;
+    }
+    return_colors(cols) {
+        if(typeof cols === "string") {
+            this._used.delete(cols);
+        } else {
+            cols.map(e => this._used.delete(e));
+        }
+    }
+};
 
-// reading the categories (for testing, from a relative JSON file, for prod from somewhere in AWS)
-let categories;
-async function init_categories(URI) {
-    
-    let freq = new Request(URI);
-    fetch(freq)
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-        for(const [key,elem] of Object.entries(data) ) {
-            let the_url = `${elem['domain']}/${elem['stage']}/${elem['api_path']}`;
-            console.log(`The URL is: ${the_url}`);
-            data[key]['URL'] = the_url.replace(/\/+/g,"/");
-        };
-        categories = data;
-    });
+// queries get their colors from the color manager
+const colorManager = new cat_colors(['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d']);
+
+// unique values of array (not necessarily preseving order!)
+let unique = function(x) {
+    return [...new Set(x)];
 }
 
 // we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
@@ -123,7 +132,7 @@ const mutex_button = function(bgURI,category_name,display_name,add_callback = nu
 }
 
 // stamping out generic buttons (they all have the same behavior)
-function init_buttons(categories) {
+function make_buttons() {
     for(let [key, val] of Object.entries(categories)) {
         const button = mutex_button(val.pic,key,val.label);
         map.addControl(new button());
@@ -243,6 +252,10 @@ var FilterTweetControl =  L.Control.extend({
 
 var locationControl = L.Control.extend({
 
+    options: {
+        position: 'bottomright'
+    },
+
     onAdd: function (map) {
 
         this.container = L.DomUtil.create('div', 'leaflet-bar leaflet-control mapctrl');
@@ -338,7 +351,7 @@ var exportControl =  L.Control.extend({
     }
 });
 
-map.addControl(new TweetControl());
+// map.addControl(new TweetControl());
 // map.addControl(new FilterTweetControl());
 map.addControl(new docuGuide());
 map.addControl(new locationControl());
@@ -348,6 +361,110 @@ layer.addTo(map); // by default, the controls have higher z-axis
 
 var editableLayers = new L.FeatureGroup();
 map.addLayer(editableLayers);
+
+// selectize menu inside of a Leaflet control:
+// following https://stackoverflow.com/questions/25763626/create-a-leaflet-custom-checkbox-control
+
+// position top-center (has been a PR in Leaflet for like 5 years!!)
+// https://stackoverflow.com/questions/33614912/how-to-locate-leaflet-zoom-control-in-a-desired-position/33621034#33621034
+// Create additional Control placeholders
+function addControlPlaceholders(map) {
+    const corners = map._controlCorners, lf = 'leaflet-', container = map._controlContainer;
+
+    function createCorner(vSide, hSide) {
+        const className = `${lf}${vSide} ${lf}${hSide}`;
+        corners[`${vSide}${hSide}`] = L.DomUtil.create('div', className, container);
+    }
+
+    createCorner('verticalcenter', 'left');
+    createCorner('verticalcenter', 'right');
+    createCorner('top','horizcenter');
+    createCorner('bottom','horizcenter');
+}
+addControlPlaceholders(map);
+
+// Change the position of the Zoom Control to a newly created placeholder.
+map.zoomControl.setPosition('verticalcenterleft');
+// You can also put other controls in the same placeholder.
+// L.control.scale({position: 'verticalcenterright'}).addTo(map);
+
+const command_box = L.control({position: 'tophorizcenter'});
+// L.DomEvent.disableClickPropagation(command_box);
+// L.DomEvent.disableScrollPropagation(command_box);
+
+command_box.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'command');
+    const category_names = Object.keys(categories).map(e => categories[e]['model-label']);
+    const dL = category_names.join(',');
+    div.innerHTML = `
+    <label for="categories" id='cat_pick_label'>Choose a category</label>
+    <input name="categories" id="cat_pick" class="dropdown-input" data-list="${dL}">
+    <button class="dropdown-btn" type="button"><span class="caret"></button>
+    `; 
+    return div;
+};
+
+let categories, comboplete;
+
+// probably should be reorganized. This is the chain of dependencies
+// that cascade from needing to wait on loading the category info
+async function init_categories(URI) {
+    
+    let freq = new Request(URI);
+    fetch(freq)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        for(const [key,elem] of Object.entries(data) ) {
+            let the_url = `${elem['domain']}/${elem['stage']}/${elem['api_path']}`;
+            the_url = the_url.replace(/\/+/g,"/");
+            if(!the_url.startsWith('https://')) the_url = `https://${the_url}`;
+            // console.debug(`The URL is: ${the_url}`);
+            data[key]['URL'] = the_url;
+        };
+        categories = data;
+    })
+    .then(function() {
+        command_box.addTo(map);
+        comboplete = new Awesomplete('input.dropdown-input', {
+            minChars: 1,
+            maxItems: 15;
+        });
+        Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
+            if (comboplete.ul.childNodes.length === 0) {
+                comboplete.minChars = 0;
+                comboplete.evaluate();
+            }
+            else if (comboplete.ul.hasAttribute('hidden')) {
+                comboplete.open();
+            }
+            else {
+                comboplete.close();
+            }
+        });
+        // store the completed query whenever a completion is achieved
+        // this obviously has the possibility to be out of sync
+        // https://stackoverflow.com/questions/35864545/awesomplete-get-selected-text/38074216#38074216
+        document.getElementById('cat_pick').addEventListener(
+            'awesomplete-selectcomplete',
+            e => {
+                console.info(`Event value: ${e.target.value}`);
+                curr_menu_v = e.target.value;
+            }
+        )
+    });
+}
+
+// we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
+// serverless deployment...
+init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe');
+
+// populate selectize menu:
+// https://github.com/selectize/selectize.js/blob/master/docs/api.md
+// $(function() {
+//     const category_names = Object.keys(categories).map(e => categories[e].label);
+//     console.log(`Category names are: ${category_names}`);
+// 	$('#cat_pick').selectize({options: category_names,maxItems: null});
+// });
 
 const drawing_options = {
     position: 'topleft',
@@ -461,6 +578,8 @@ class query_control {
         delete selectionList[this._id];
         // remove control div from map
         map.removeControl(this._control);
+        // this is a little nasty, mixing in dependencies
+        colorManager.return_colors(this._color);
         delete queryControls[this._id];
         // also remove it from the document
         this._control.remove();
@@ -474,6 +593,7 @@ let unique = function(x) {
 
 // let the control objects survive
 const queryControls = {};
+let curr_menu_v;
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
@@ -502,14 +622,25 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     
     // console.debug(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
-        let endpoint, category, label;
-        const active_category = getActiveButton();
-        if(categories.hasOwnProperty(active_category)) {
-            category = active_category;
-            endpoint = categories[active_category].endpoint;
-            label = categories[active_category].label;
-        } else {
+        
+        let endpoint='', category='';
+        const active_category = curr_menu_v; // the label from dropdown
+        for(const [key,val] of Object.entries(categories)) {
+            if(val['model-label'] === active_category) {
+                endpoint = val['URL'];
+                category = val['model-name'];
+                break;
+            }
+        }
+        if(endpoint === '') {
             haveSnack("No active category: polygon has no effect.");
+            return;
+        }
+        // get a color (always returns an array, so need to get first element)
+        const layer_color = colorManager.get_colors(1)[0];
+        // console.debug(`Layer color is: ${layer_color}`);
+        if(layer_color === null) {
+            haveSnack(`Max. of ${colorManager.n_colors} categories may be shown<br>Remove some first!`);
             return;
         }
         num_queries++;
@@ -526,8 +657,11 @@ map.on(L.Draw.Event.CREATED, async function(e) {
         if(layerGroup !== null && layerGroup.getLayers().length) {
             layerGroup.addTo(map);
             selectionList[query_id] = layerGroup; // tracking all the searches not cleared
-            let QC = new query_control(query_id,category,layer_color,label);
+            let QC = new query_control(query_id,category,layer_color,active_category);
             queryControls[query_id] = QC;
+        } else {
+            // didn't use - give it back
+            colorManager.return_colors(layer_color);
         }
     }
 });
