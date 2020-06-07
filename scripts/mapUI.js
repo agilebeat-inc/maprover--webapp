@@ -1,19 +1,14 @@
 "use strict";
 // custom UI components for the main Maprover page
-// mostly, this defines the interavtive buttons that are laid on top of the map
-
-// TODO:
-// [ ] add a CSS class to RHS control buttons so they can all be resized easily (in mutex_button constructor?)
-// [ ] dynamically resize buttons depending on (i) initial viewport height or (ii) after resizing
-// [ ] use FeatureGroup rather than LayerGroup for tiles?
-// [ ] sizing of class 'cboxlab'
+// mostly, this defines the interactive widgets that are laid on top of the map
+// and manages the user queries' lifecycles
 
 var map = L.map('map', {
     minZoom: 0,
     maxZoom: 19
+}).setView([-37.78333, 175.28333], 11);
     //}).setView([47.39365919797528, 38.91292367990341], 18);
     //}).setView([-36.30215075678218, 174.9156190124816], 12);
-}).setView([-37.78333, 175.28333], 11);
 
 var layer = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -52,29 +47,27 @@ function flatten_geoJSON() {
 // endpoint: the URL that the tile-classifying function should call when (points to an AWS API Gateway)
 // consider if we want to have different textures for common things like landuse?
 class map_category {
-    constructor(picURI,color,label,endpoint) {
+    constructor(picURI,label,endpoint) {
         this._uri = picURI;
-        this._col = color;
         this._lab = label;
         this._endp = endpoint;
     }
     get pic() { return this._uri; }
-    get color() { return this._col; }
     get label() { return this._lab; }
     get endpoint() { return this._endp; }
 };
 
 // colors for tiles associated with given categories
 // https://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=7
-const categories = {
-    rail: new map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    airfield: new map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    // highway: new map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
-    military: new map_category("images/military.png","#e7298a","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
-    land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
-    land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
-};
+// const categories = {
+//     rail: new map_category("images/railroad-icon.png",'#1b9e77','Railroad','https://2w75f5k0i4.execute-api.us-east-1.amazonaws.com/prod/infer'),
+//     airfield: new map_category("images/jet-icon.png",'#d95f02','Airfield','https://8l5w4ajb98.execute-api.us-east-1.amazonaws.com/prod/infer'),
+//     // highway: new map_category("images/road-icon.png",'#7570b3','Motorway','https://www.abcxyz.com'),
+//     military: new map_category("images/military.png","#e7298a","Military", "https://ambv0h96lh.execute-api.us-east-1.amazonaws.com/prod/infer"),
+//     land_construction: new map_category('images/construction.png','#66a61e','Construction','https://b98zj24rw3.execute-api.us-east-1.amazonaws.com/prod/infer'),
+//     land_commerce: new map_category('images/commerce.png','#e6ab02','Commerce','https://bn5maepxyj.execute-api.us-east-1.amazonaws.com/prod/infer'),
+//     land_industry: new map_category('images/industry.png','#a6761d','Industry','https://xhcd8q7pf5.execute-api.us-east-1.amazonaws.com/prod/infer')
+// };
 
 // need to sync names so we can look up the palette color and set #id[data-tooltip]::before{background-color}
 const mutex_button = function(bgURI,category_name,display_name,add_callback = null) {
@@ -108,9 +101,11 @@ const mutex_button = function(bgURI,category_name,display_name,add_callback = nu
 }
 
 // stamping out generic buttons (they all have the same behavior)
-for(let [key, val] of Object.entries(categories)) {
-    const button = mutex_button(val.pic,key,val.label);
-    map.addControl(new button());
+function make_buttons() {
+    for(let [key, val] of Object.entries(categories)) {
+        const button = mutex_button(val.pic,key,val.label);
+        map.addControl(new button());
+    }
 }
 
 
@@ -122,7 +117,7 @@ function getActiveButton() {
     return '';
 }
 
-const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('tweet_filter');
+// const _mutex_group = Object.keys(categories).map(e => `${e}_filter`).concat('tweet_filter');
 
 // mutex for the buttons that can toggle
 // this should be added as a 'click' event callback for the buttons in the mutex group
@@ -321,7 +316,7 @@ var exportControl =  L.Control.extend({
     }
 });
 
-map.addControl(new TweetControl());
+// map.addControl(new TweetControl());
 // map.addControl(new FilterTweetControl());
 map.addControl(new docuGuide());
 map.addControl(new locationControl());
@@ -332,7 +327,7 @@ layer.addTo(map); // by default, the controls have higher z-axis
 var editableLayers = new L.FeatureGroup();
 map.addLayer(editableLayers);
 
-// selecftize menu inside of a Leaflet control:
+// selectize menu inside of a Leaflet control:
 // following https://stackoverflow.com/questions/25763626/create-a-leaflet-custom-checkbox-control
 // plus we'd like to position top-center (has been a PR in Leaflet for like 5 years!!)
 // https://stackoverflow.com/questions/33614912/how-to-locate-leaflet-zoom-control-in-a-desired-position/33621034#33621034
@@ -357,9 +352,9 @@ map.zoomControl.setPosition('verticalcenterleft');
 // You can also put other controls in the same placeholder.
 // L.control.scale({position: 'verticalcenterright'}).addTo(map);
 
-const command = L.control({position: 'tophorizcenter'});
+const command_box = L.control({position: 'tophorizcenter'});
 
-command.onAdd = function (map) {
+command_box.onAdd = function (map) {
     var div = L.DomUtil.create('div', 'command');
     const category_names = Object.keys(categories).map(e => categories[e].label);
     const dL = category_names.join(',');
@@ -370,7 +365,7 @@ command.onAdd = function (map) {
     `; 
     return div;
 };
-command.addTo(map);
+command_box.addTo(map);
 
 // a pretty cheeze horrid hack to make this work like Selectize:
 const comboplete = new Awesomplete('input.dropdown-input', {
@@ -388,6 +383,16 @@ Awesomplete.$('.dropdown-btn').addEventListener("click", function() {
 		comboplete.close();
 	}
 });
+// store the completed query whenever a completion is achieved
+// this obviously has the possibility to be out of sync
+// https://stackoverflow.com/questions/35864545/awesomplete-get-selected-text/38074216#38074216
+document.getElementById('cat_pick').addEventListener(
+    'awesomplete-selectcomplete',
+    e => {
+        console.info(`Event target: ${e.target}`);
+        curr_menu_v = this.value;
+    }
+)
 
 // populate selectize menu:
 // https://github.com/selectize/selectize.js/blob/master/docs/api.md
@@ -516,6 +521,7 @@ class query_control {
 
 // let the control objects survive?
 const queryControls = {};
+let curr_menu_v;
 
 map.on(L.Draw.Event.CREATED, async function(e) {
 
@@ -523,18 +529,20 @@ map.on(L.Draw.Event.CREATED, async function(e) {
     
     // console.log(`Layer bounds are: ${e.layer._bounds._northEast} and ${e.layer._bounds._southWest}`);
     if (e.layerType === 'polygon') {
-        let endpoint, category, label, layer_color = '';
-        const active_category = getActiveButton(); // only need to replace this with selectize menu
+        let endpoint, category, label;
+        // const active_category = getActiveButton(); // only need to replace this with selectize menu
+        const active_category = curr_menu_v;
         if(categories.hasOwnProperty(active_category)) {
             category = active_category;
             endpoint = categories[active_category].endpoint;
-            layer_color = categories[active_category].color;
             label = categories[active_category].label;
         } else {
             haveSnack("No active category: polygon has no effect.");
             console.warn("No active category: polygon has no effect.");
             return;
         }
+        // get a color:
+        const layer_color = '#ff2200';
         num_queries++;
         const query_id = `query_${num_queries}`;
         let layerGroup = await tileAlgebra.bbox_coverage(
