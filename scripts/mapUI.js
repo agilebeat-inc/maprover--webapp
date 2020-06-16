@@ -372,26 +372,34 @@ function addControlPlaceholders(map) {
 }
 addControlPlaceholders(map);
 
-// Change the position of the Zoom Control to a newly created placeholder.
-map.zoomControl.setPosition('verticalcenterleft');
+// Change the position of the Zoom Control to a newly created placeholder:
+// map.zoomControl.setPosition('verticalcenterleft');
 // You can also put other controls in the same placeholder.
 // L.control.scale({position: 'verticalcenterright'}).addTo(map);
 
-const command_box = L.control({position: 'tophorizcenter'});
-// L.DomEvent.disableClickPropagation(command_box);
-// L.DomEvent.disableScrollPropagation(command_box);
+const command_box = L.Control.extend({
+    options: {
+        position: 'tophorizcenter'
+    },
+    onAdd: function() {
+        var div = L.DomUtil.create('div', 'command');
+        const category_names = Object.keys(categories).map(e => categories[e]['model-label']);
+        const dL = category_names.join(',');
+        div.innerHTML = `
+        <label for="categories" id='cat_pick_label'>Choose a category</label>
+        <input name="categories" id="cat_pick" class="dropdown-input" data-list="${dL}">
+        <button class="dropdown-btn" type="button"><span class="caret"></button>
+        `;
 
-command_box.onAdd = function (map) {
-    var div = L.DomUtil.create('div', 'command');
-    const category_names = Object.keys(categories).map(e => categories[e]['model-label']);
-    const dL = category_names.join(',');
-    div.innerHTML = `
-    <label for="categories" id='cat_pick_label'>Choose a category</label>
-    <input name="categories" id="cat_pick" class="dropdown-input" data-list="${dL}">
-    <button class="dropdown-btn" type="button"><span class="caret"></button>
-    `; 
-    return div;
-};
+        L.DomEvent.disableClickPropagation(div);
+        L.DomEvent.disableScrollPropagation(div);
+        L.DomEvent.on(div, 'contextmenu', function (ev) {
+            L.DomEvent.stopPropagation(ev);
+        });
+        return div;
+    }
+});
+
 
 let categories, comboplete;
 
@@ -413,7 +421,9 @@ async function init_categories(URI) {
         categories = data;
     })
     .then(function() {
-        command_box.addTo(map);
+        // command_box.addTo(map);
+        const CB = new command_box();
+        map.addControl(CB);
         comboplete = new Awesomplete('input.dropdown-input', {
             minChars: 1,
             maxItems: 15
@@ -431,7 +441,7 @@ async function init_categories(URI) {
             }
         });
         // store the completed query whenever a completion is achieved
-        // this obviously has the possibility to be out of sync
+        // this obviously has the possibility to be out of sync since the stored value may have been deleted in the box
         // https://stackoverflow.com/questions/35864545/awesomplete-get-selected-text/38074216#38074216
         document.getElementById('cat_pick').addEventListener(
             'awesomplete-selectcomplete',
@@ -445,7 +455,8 @@ async function init_categories(URI) {
 
 // we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
 // serverless deployment...
-init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe');
+// init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe');
+init_categories('https://nkdz3n5bi2.execute-api.us-east-1.amazonaws.com/prod/api/describe');
 
 // populate selectize menu:
 // https://github.com/selectize/selectize.js/blob/master/docs/api.md
