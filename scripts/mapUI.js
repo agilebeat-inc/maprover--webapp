@@ -1,4 +1,6 @@
 "use strict";
+
+const API_Gateway_URL = 'https://nkdz3n5bi2.execute-api.us-east-1.amazonaws.com/prod/api/describe';
 // custom UI components for the main Maprover page
 // mostly, this defines the interactive widgets that are laid on top of the map
 // and manages the user queries' lifecycles
@@ -456,7 +458,7 @@ async function init_categories(URI) {
 // we still have a hard-coded 'static' URL here, it just happens to be a URL of my particular
 // serverless deployment...
 // init_categories('https://42sw814sz3.execute-api.us-east-1.amazonaws.com/prod/api/describe');
-init_categories('https://nkdz3n5bi2.execute-api.us-east-1.amazonaws.com/prod/api/describe');
+init_categories(API_Gateway_URL);
 
 // populate selectize menu:
 // https://github.com/selectize/selectize.js/blob/master/docs/api.md
