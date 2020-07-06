@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-bucket_name='maprover-demo'
+bucket_name='maprover.io'
 
 index_file='index-mr.html'
 error_file='error.html'
 
-AWS_CMD='aws2'
+AWS_CMD='aws'
 
 
 # which directories we don't need for the frontend site itself
@@ -22,7 +22,12 @@ AWS_CMD='aws2'
 if ${AWS_CMD} s3api head-bucket --bucket ${bucket_name} 2>/dev/null; then
     # if it already exists, use sync rather than copying everything:
     echo "Syncing files to existing bucket ${bucket_name}"
-    ${AWS_CMD} s3 sync ../ "s3://${bucket_name}" --exclude ".git/*" --exclude "deploy/*" --exclude "test/*"
+    ${AWS_CMD} s3 sync ../ "s3://${bucket_name}" \
+        --exclude ".git/*" --exclude "deploy/*" \
+        --exclude "test/*" --exclude ".devcontainer/*" \
+        --exclude ".vscode/*" --exclude ".gitignore" \
+        --exclude "README.md"
+
     # ${AWS_CMD} "${cmd_arr[@]}"
 else
     echo "Creating bucket ${bucket_name}..."
