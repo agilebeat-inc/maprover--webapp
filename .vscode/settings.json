@@ -1,0 +1,5 @@
+{
+	"terminal.integrated.shell.linux": "/bin/bash",
+	"liveServer.settings.CustomBrowser": "chrome",
+	"liveServer.settings.port": 9999,
+}
