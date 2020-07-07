@@ -1,6 +1,6 @@
 "use strict";
 
-const API_Gateway_URL = 'https://nkdz3n5bi2.execute-api.us-east-1.amazonaws.com/prod/api/describe';
+const API_Gateway_URL = 'https://ml.api.maprover.io/prod/api/describe';
 // custom UI components for the main Maprover page
 // mostly, this defines the interactive widgets that are laid on top of the map
 // and manages the user queries' lifecycles
@@ -423,7 +423,6 @@ async function init_categories(URI) {
         categories = data;
     })
     .then(function() {
-        // command_box.addTo(map);
         const CB = new command_box();
         map.addControl(CB);
         comboplete = new Awesomplete('input.dropdown-input', {
